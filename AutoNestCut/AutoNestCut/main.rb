@@ -23,6 +23,7 @@ module AutoNestCut
     begin
       analyzer = ModelAnalyzer.new
       part_types_by_material_and_quantities = analyzer.extract_parts_from_selection(selection)
+      original_components = analyzer.get_original_components_data
 
       if part_types_by_material_and_quantities.empty?
         UI.messagebox("No valid sheet good parts found in your selection for AutoNestCut.")
@@ -30,33 +31,14 @@ module AutoNestCut
       end
 
       dialog_manager = UIDialogManager.new
-      dialog_manager.show_config_dialog(part_types_by_material_and_quantities)
+      dialog_manager.show_config_dialog(part_types_by_material_and_quantities, original_components)
 
     rescue => e
       UI.messagebox("An error occurred during part extraction:\n#{e.message}")
     end
   end
 
-  def self.process_nesting(part_types_by_material_and_quantities, settings)
-    begin
-      nester = Nester.new
-      boards = nester.optimize_boards(part_types_by_material_and_quantities, settings)
 
-      if boards.empty?
-         UI.messagebox("No boards could be generated.")
-         return
-      end
-
-      report_generator = ReportGenerator.new
-      report_data = report_generator.generate_report_data(boards)
-
-      dialog_manager = UIDialogManager.new
-      dialog_manager.show_diagrams_and_report_dialog(boards, report_data)
-
-    rescue => e
-      UI.messagebox("An error occurred during the nesting process:\n#{e.message}")
-    end
-  end
 
   unless file_loaded?(__FILE__)
     menu = UI.menu('Plugins')

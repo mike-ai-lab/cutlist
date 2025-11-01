@@ -9,6 +9,11 @@
     <div class="container">
         <h1>AutoNestCut Configuration</h1>
         
+        <div class="buttons-top">
+            <button type="button" onclick="processNesting()" class="primary">Generate Cut List</button>
+            <button type="button" onclick="window.close()">Cancel</button>
+        </div>
+        
         <div class="section">
             <h2>General Settings</h2>
             <div class="form-group">
@@ -23,7 +28,7 @@
         </div>
         
         <div class="section">
-            <h2>Stock Materials</h2>
+            <h2>Stock Materials & Pricing</h2>
             <div id="materials_list"></div>
             <button type="button" onclick="addMaterial()">Add Material</button>
         </div>
@@ -31,11 +36,6 @@
         <div class="section">
             <h2>Parts Preview</h2>
             <div id="parts_preview"></div>
-        </div>
-        
-        <div class="buttons">
-            <button type="button" onclick="processNesting()" class="primary">Generate Cut List</button>
-            <button type="button" onclick="window.close()">Cancel</button>
         </div>
     </div>
     

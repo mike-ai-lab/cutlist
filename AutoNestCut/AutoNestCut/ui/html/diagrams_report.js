@@ -6,6 +6,15 @@ function callRuby(method, args) {
     }
 }
 
+function receiveData(data) {
+    console.log('Received data:', data);
+    g_boardsData = data.diagrams;
+    g_reportData = data.report;
+    
+    renderDiagrams();
+    renderReport();
+}
+
 let g_boardsData = [];
 let g_reportData = null;
 
@@ -13,6 +22,7 @@ function receiveData(data) {
     console.log('Received data:', data);
     g_boardsData = data.diagrams;
     g_reportData = data.report;
+    window.originalComponents = data.original_components || [];
     
     renderDiagrams();
     renderReport();
@@ -158,7 +168,20 @@ function renderReport() {
         <tr><td>Total Unique Part Types</td><td>${g_reportData.summary.total_unique_part_types || 0}</td></tr>
         <tr><td>Total Boards</td><td>${g_reportData.summary.total_boards || 0}</td></tr>
         <tr><td>Overall Efficiency</td><td>${(g_reportData.summary.overall_efficiency || 0).toFixed(2)}%</td></tr>
+        <tr><td><strong>Total Project Cost</strong></td><td class="total-highlight"><strong>$${(g_reportData.summary.total_project_cost || 0).toFixed(2)}</strong></td></tr>
     `;
+
+    // Materials Used Section - moved to top
+    const materialsContainer = document.getElementById('materialsContainer');
+    if (materialsContainer && g_reportData.unique_board_types) {
+        materialsContainer.innerHTML = g_reportData.unique_board_types.map(board_type => `
+            <div class="material-item">
+                <div class="material-swatch" style="background: ${getMaterialTexture(board_type.material)}"></div>
+                <span class="material-name">${board_type.material}</span>
+                <span class="material-price">Price: $${(board_type.price_per_sheet || 0).toFixed(2)}</span>
+            </div>
+        `).join('');
+    }
 
     // Unique Part Types Table
     const uniquePartTypesTable = document.getElementById('uniquePartTypesTable');
@@ -176,7 +199,7 @@ function renderReport() {
                         <td>${part_type.thickness.toFixed(2)}</td>
                         <td>${part_type.material}</td>
                         <td>${part_type.grain_direction}</td>
-                        <td>${part_type.total_quantity}</td>
+                        <td class="total-highlight">${part_type.total_quantity}</td>
                         <td>${(part_type.total_area / 1000000).toFixed(3)}</td>
                     </tr>
                 `;
@@ -188,7 +211,7 @@ function renderReport() {
     const uniqueBoardTypesTable = document.getElementById('uniqueBoardTypesTable');
     if (uniqueBoardTypesTable) {
         uniqueBoardTypesTable.innerHTML = `
-            <tr><th>Material</th><th>Dimensions</th><th>Count</th><th>Total Area (m²)</th></tr>
+            <tr><th>Material</th><th>Dimensions</th><th>Count</th><th>Total Area (m²)</th><th>Price/Sheet</th><th>Total Cost</th></tr>
         `;
         if (g_reportData.unique_board_types) {
             g_reportData.unique_board_types.forEach(board_type => {
@@ -196,8 +219,10 @@ function renderReport() {
                     <tr>
                         <td>${board_type.material}</td>
                         <td>${board_type.dimensions}</td>
-                        <td>${board_type.count}</td>
+                        <td class="total-highlight">${board_type.count}</td>
                         <td>${(board_type.total_area / 1000000).toFixed(3)}</td>
+                        <td>$${(board_type.price_per_sheet || 0).toFixed(2)}</td>
+                        <td class="total-highlight">$${(board_type.total_cost || 0).toFixed(2)}</td>
                     </tr>
                 `;
             });
@@ -216,26 +241,14 @@ function renderReport() {
                     <td>${board.board_number}</td>
                     <td>${board.material}</td>
                     <td>${board.stock_size}</td>
-                    <td>${board.parts_count}</td>
+                    <td class="total-highlight">${board.parts_count}</td>
                     <td>${board.efficiency.toFixed(2)}%</td>
                 </tr>
             `;
         });
     }
 
-    // Materials Used Section
-    const materialsContainer = document.getElementById('materialsContainer');
-    if (materialsContainer && g_reportData.unique_part_types) {
-        const materials = [...new Set(g_reportData.unique_part_types.map(p => p.material))];
-        materialsContainer.innerHTML = materials.map(material => `
-            <div class="material-item">
-                <div class="material-swatch" style="background: ${getMaterialTexture(material)}"></div>
-                <span class="material-name">${material}</span>
-            </div>
-        `).join('');
-    }
-
-    // Parts Placed Table (removed position and rotated columns)
+    // Parts Placed Table
     const partsTable = document.getElementById('partsTable');
     partsTable.innerHTML = `
         <tr><th>Unique ID</th><th>Name</th><th>Dimensions</th><th>Material</th><th>Board#</th></tr>
@@ -317,6 +330,8 @@ function showPartModal(part) {
     const modalInfo = document.getElementById('modalInfo');
     
     initThreeJS(part, modalCanvas);
+    
+
     setupOrbitControls();
     
     // Set modal info
@@ -331,10 +346,7 @@ function showPartModal(part) {
     `;
     
     // Setup button controls
-    document.getElementById('textureToggle').onclick = () => {
-        showTexture = !showTexture;
-        document.getElementById('textureToggle').textContent = showTexture ? 'Blue Color' : 'Material Texture';
-    };
+
     
     document.getElementById('projectionToggle').onclick = () => {
         isOrthographic = !isOrthographic;
@@ -355,37 +367,150 @@ function showPartModal(part) {
     animate();
 }
 
-function createMaterialTexture(material) {
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = 256;
-    const ctx = canvas.getContext('2d');
-    
-    if (material.toLowerCase().includes('wood') || material.toLowerCase().includes('chestnut')) {
-        // Wood grain pattern
-        ctx.fillStyle = '#8B4513';
-        ctx.fillRect(0, 0, 256, 256);
-        ctx.fillStyle = '#A0522D';
-        for (let i = 0; i < 256; i += 4) {
-            ctx.fillRect(0, i, 256, 2);
-        }
-    } else {
-        // Generic material pattern
-        ctx.fillStyle = '#D3D3D3';
-        ctx.fillRect(0, 0, 256, 256);
-        ctx.fillStyle = '#A9A9A9';
-        for (let i = 0; i < 256; i += 8) {
-            ctx.fillRect(i, 0, 4, 256);
-            ctx.fillRect(0, i, 256, 4);
-        }
+
+
+function exportInteractiveHTML() {
+    // Ensure we have data before exporting
+    if (!g_boardsData || g_boardsData.length === 0 || !g_reportData) {
+        alert('No data to export. Please generate a report first.');
+        return;
     }
-    
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+    const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>AutoNestCut Interactive Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .container { display: flex; gap: 20px; }
+        .diagrams-container { flex: 1; }
+        .report-container { flex: 1; }
+        .diagram-card { border: 1px solid #ddd; margin: 10px 0; padding: 10px; }
+        .diagram-canvas { border: 1px solid #ccc; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 60%; max-width: 800px; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: black; }
+        #modalCanvas { border: 1px solid #ddd; }
+        #modalInfo { margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AutoNestCut Interactive Report</h1>
+        <button onclick="window.print()">Print / Save as PDF</button>
+    </div>
+    <div class="container">
+        <div id="diagramsContainer" class="diagrams-container"></div>
+        <div id="reportContainer" class="report-container">
+            <h2>Overall Summary</h2>
+            <table id="summaryTable"></table>
+            <h2>Materials Used</h2>
+            <div id="materialsContainer"></div>
+            <h2>Unique Part Types</h2>
+            <table id="uniquePartTypesTable"></table>
+            <h2>Unique Board Types</h2>
+            <table id="uniqueBoardTypesTable"></table>
+            <h2>Boards Summary</h2>
+            <table id="boardsTable"></table>
+            <h2>Parts Placed (Detailed)</h2>
+            <table id="partsTable"></table>
+        </div>
+    </div>
+    <div id="partModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <canvas id="modalCanvas" width="500" height="400"></canvas>
+            <div id="modalInfo"></div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        let g_boardsData = ${JSON.stringify(g_boardsData)};
+        let g_reportData = ${JSON.stringify(g_reportData)};
+        
+        ${getJSContent()}
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            renderDiagrams();
+            renderReport();
+            
+            const modal = document.getElementById('partModal');
+            const closeBtn = document.querySelector('.close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => modal.style.display = 'none');
+            }
+            window.addEventListener('click', (e) => {
+                if (e.target === modal) modal.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>`;
+
+    downloadHTML(htmlContent, 'AutoNestCut_Interactive_Report.html');
 }
+
+
+
+function getJSContent() {
+    return `
+        ${renderDiagrams.toString()}
+        ${renderReport.toString()}
+        ${showPartModal.toString()}
+        ${initThreeJS.toString()}
+        ${setupOrbitControls.toString()}
+        ${animate.toString()}
+        ${handleCanvasClick.toString()}
+        ${handleCanvasHover.toString()}
+        ${getMaterialColor.toString()}
+        ${getMaterialTexture.toString()}
+        ${getPartColor.toString()}
+        ${initResizer.toString()}
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('partModal');
+            const closeBtn = document.querySelector('.close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => modal.style.display = 'none');
+            }
+            window.addEventListener('click', (e) => {
+                if (e.target === modal) modal.style.display = 'none';
+            });
+            initResizer();
+        });
+    `;
+}
+
+function downloadHTML(content, filename) {
+    try {
+        const blob = new Blob([content], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        // Show success message
+        setTimeout(() => {
+            alert('Interactive HTML report exported successfully!');
+        }, 100);
+    } catch (error) {
+        alert('Error exporting HTML: ' + error.message);
+    }
+}
+
+
 
 function initThreeJS(part, canvas) {
     scene = new THREE.Scene();
@@ -455,12 +580,20 @@ function animate() {
 
 
 // Resizer functionality
+let resizerInitialized = false;
+
 function initResizer() {
     const resizer = document.getElementById('resizer');
     const leftSide = document.getElementById('diagramsContainer');
     const rightSide = document.getElementById('reportContainer');
     
+    if (!resizer || !leftSide || !rightSide || resizerInitialized) return;
+    
     let isResizing = false;
+    resizerInitialized = true;
+    
+    // Set initial cursor style
+    resizer.style.cursor = 'col-resize';
     
     function handleMouseMove(e) {
         if (!isResizing) return;
@@ -480,13 +613,12 @@ function initResizer() {
     }
     
     function handleMouseUp() {
-        if (isResizing) {
-            isResizing = false;
-            document.body.style.cursor = '';
-            document.body.style.userSelect = '';
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        }
+        isResizing = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        resizer.style.cursor = 'col-resize';
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
     }
     
     resizer.addEventListener('mousedown', (e) => {
@@ -498,17 +630,26 @@ function initResizer() {
         document.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('mouseup', handleMouseUp);
     });
+    
+    // Ensure resizer cursor is always visible
+    resizer.addEventListener('mouseenter', () => {
+        if (!isResizing) {
+            resizer.style.cursor = 'col-resize';
+        }
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('printButton').addEventListener('click', () => {
-        document.title = 'AutoNestCut_Report';
-        window.print();
-    });
-
-    document.getElementById('exportCsvButton').addEventListener('click', () => {
-        callRuby('export_csv');
-    });
+    // Only handle back button here since export buttons are handled in main.html
+    const backBtn = document.getElementById('backButton');
+    
+    if (backBtn) {
+        backBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            callRuby('back_to_config');
+        });
+    }
 
     // Modal close functionality
     const modal = document.getElementById('partModal');
@@ -525,5 +666,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     initResizer();
-    callRuby('ready');
+    // Initialize the page
+    setTimeout(() => {
+        callRuby('ready');
+    }, 100);
 });

@@ -13,7 +13,14 @@ module AutoNestCut
         read_value = Sketchup.read_default('AutoNestCut', key, value)
         
         if key == 'stock_materials' && read_value.is_a?(Hash)
-          settings[key] = read_value.transform_values { |dims| dims.map(&:to_f) }
+          # Handle both old array format and new hash format
+          settings[key] = read_value.transform_values do |dims|
+            if dims.is_a?(Array)
+              { 'width' => dims[0].to_f, 'height' => dims[1].to_f, 'price' => 0 }
+            else
+              dims
+            end
+          end
         else
           settings[key] = read_value
         end
@@ -25,6 +32,10 @@ module AutoNestCut
       settings.each do |key, value|
         Sketchup.write_default('AutoNestCut', key, value)
       end
+    end
+    
+    def self.get_material_from_definition(component_definition, selected_entities = nil)
+      get_material_from_component_definition(component_definition, selected_entities)
     end
     
     def self.get_material_from_component_definition(component_definition, selected_entities = nil)
@@ -78,6 +89,34 @@ module AutoNestCut
 
       # 4. Default fallback - return the material name as-is
       'Unknown_Material'
+    end
+    
+    def self.get_material_texture_data(component_definition, selected_entities = nil)
+      # Find material instance
+      material = nil
+      
+      if selected_entities
+        selected_entities.each do |entity|
+          if entity.is_a?(Sketchup::ComponentInstance) && entity.definition == component_definition
+            material = entity.material
+            break if material
+          end
+        end
+      end
+      
+      return nil unless material && material.texture
+      
+      # Get texture properties
+      texture = material.texture
+      {
+        width: texture.width,
+        height: texture.height,
+        filename: texture.filename,
+        # Note: In a real implementation, you'd need to export the texture image
+        # For now, return basic texture info
+        scale_x: 1.0,
+        scale_y: 1.0
+      }
     end
     
     def self.find_stock_material_match(material_name)

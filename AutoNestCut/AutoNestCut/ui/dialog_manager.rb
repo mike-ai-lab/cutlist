@@ -1,73 +1,81 @@
 module AutoNestCut
   class UIDialogManager
     
-    def show_config_dialog(parts_by_material)
+    def show_config_dialog(parts_by_material, original_components = [])
+      @parts_by_material = parts_by_material
+      @original_components = original_components
       settings = Config.load_settings
       
-      dialog = UI::HtmlDialog.new(
-        dialog_title: "AutoNestCut Configuration",
-        preferences_key: "AutoNestCut_Config",
-        scrollable: true,
-        resizable: true,
-        width: 600,
-        height: 500
-      )
-      
-      html_file = File.join(__dir__, 'html', 'config.html')
-      dialog.set_file(html_file)
-      
-      # Send initial data to dialog
-      dialog.add_action_callback("ready") do |action_context|
-        data = {
-          settings: settings,
-          parts_by_material: serialize_parts_by_material(parts_by_material)
-        }
-        dialog.execute_script("receiveInitialData(#{data.to_json})")
-      end
-      
-      # Handle settings save and process
-      dialog.add_action_callback("process") do |action_context, settings_json|
-        begin
-          new_settings = JSON.parse(settings_json)
-          Config.save_settings(new_settings)
-          dialog.close
-          AutoNestCut.process_nesting(parts_by_material, new_settings)
-        rescue => e
-          UI.messagebox("Error processing settings: #{e.message}")
-        end
-      end
-      
-      dialog.show
-    end
-    
-    def show_diagrams_and_report_dialog(boards, report_data)
-      dialog = UI::HtmlDialog.new(
-        dialog_title: "AutoNestCut Diagrams & Report",
-        preferences_key: "AutoNestCut_DiagramsReport",
+      @dialog = UI::HtmlDialog.new(
+        dialog_title: "AutoNestCut",
+        preferences_key: "AutoNestCut_Main",
         scrollable: true,
         resizable: true,
         width: 1200,
         height: 750
       )
       
-      html_file = File.join(__dir__, 'html', 'diagrams_report.html')
-      dialog.set_file(html_file)
+      html_file = File.join(__dir__, 'html', 'main.html')
+      @dialog.set_file(html_file)
       
-      dialog.add_action_callback("ready") do |action_context|
+      # Send initial data to dialog
+      @dialog.add_action_callback("ready") do |action_context|
         data = {
-          diagrams: boards.map(&:to_h),
-          report: report_data,
-          boards: boards.map(&:to_h)
+          settings: settings,
+          parts_by_material: serialize_parts_by_material(parts_by_material),
+          original_components: original_components,
+          model_materials: get_model_materials
         }
-        puts "Sending data: #{data.inspect}"
-        dialog.execute_script("receiveData(#{data.to_json})")
+        @dialog.execute_script("receiveInitialData(#{data.to_json})")
       end
       
-      dialog.add_action_callback("export_csv") do |action_context|
-        export_csv_report(report_data)
+      # Handle settings save and process
+      @dialog.add_action_callback("process") do |action_context, settings_json|
+        begin
+          new_settings = JSON.parse(settings_json)
+          Config.save_settings(new_settings)
+          
+          nester = Nester.new
+          boards = nester.optimize_boards(@parts_by_material, new_settings)
+          
+          if boards.empty?
+            @dialog.execute_script("showError('No boards could be generated.')")
+            return
+          end
+          
+          report_generator = ReportGenerator.new
+          report_data = report_generator.generate_report_data(boards, new_settings)
+          
+          data = {
+            diagrams: boards.map(&:to_h),
+            report: report_data,
+            boards: boards.map(&:to_h),
+            original_components: @original_components
+          }
+          @dialog.execute_script("showReportTab(#{data.to_json})")
+        rescue => e
+          @dialog.execute_script("showError('Error processing: #{e.message}')")
+        end
       end
       
-      dialog.show
+      @dialog.add_action_callback("export_csv") do |action_context, report_data_json|
+        begin
+          if report_data_json && !report_data_json.empty?
+            report_data = JSON.parse(report_data_json, symbolize_names: true)
+            export_csv_report(report_data)
+          else
+            UI.messagebox("Error exporting CSV: No report data available")
+          end
+        rescue => e
+          UI.messagebox("Error exporting CSV: #{e.message}")
+        end
+      end
+      
+      @dialog.add_action_callback("back_to_config") do |action_context|
+        @dialog.execute_script("showConfigTab()")
+      end
+      
+      @dialog.show
     end
     
     private
@@ -75,9 +83,28 @@ module AutoNestCut
     def serialize_parts_by_material(parts_by_material)
       result = {}
       parts_by_material.each do |material, parts|
-        result[material] = parts.map(&:to_h)
+        result[material] = parts.map do |part|
+          {
+            name: part.name,
+            width: part.width,
+            height: part.height,
+            thickness: part.thickness,
+            total_quantity: part.total_quantity || 1
+          }
+        end
       end
       result
+    end
+    
+    def get_model_materials
+      materials = []
+      Sketchup.active_model.materials.each do |material|
+        materials << {
+          name: material.display_name || material.name,
+          color: material.color ? material.color.to_a[0..2] : [200, 200, 200]
+        }
+      end
+      materials
     end
     
     def export_csv_report(report_data)

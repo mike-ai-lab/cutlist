@@ -15,6 +15,7 @@ module AutoNestCut
 
       @material = Config.get_material_from_component_definition(component_definition, selected_entities)
       @grain_direction = Config.get_grain_direction_from_definition(component_definition)
+      @texture_data = Config.get_material_texture_data(component_definition, selected_entities)
 
       @x = 0.0
       @y = 0.0
@@ -23,7 +24,7 @@ module AutoNestCut
     end
 
     def create_placed_instance
-      placed_part = self.dup
+      placed_part = Part.new(@original_definition)
       placed_part.instance_id = nil
       placed_part.x = 0.0
       placed_part.y = 0.0
@@ -70,7 +71,8 @@ module AutoNestCut
         x: @x.round(2),
         y: @y.round(2),
         rotated: @rotated,
-        instance_id: @instance_id
+        instance_id: @instance_id,
+        texture_data: @texture_data
       }
     end
   end

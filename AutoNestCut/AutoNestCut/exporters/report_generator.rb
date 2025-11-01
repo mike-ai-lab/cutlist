@@ -3,7 +3,7 @@ require 'csv'
 module AutoNestCut
   class ReportGenerator
 
-    def generate_report_data(boards)
+    def generate_report_data(boards, settings = {})
       parts_placed_on_boards = []
       unique_part_types_summary = {}
 
@@ -38,6 +38,18 @@ module AutoNestCut
         }
         unique_board_types[board_key][:count] += 1
         unique_board_types[board_key][:total_area] += board.total_area
+        
+        # Add pricing calculation
+        stock_materials = settings['stock_materials'] || {}
+        material_info = stock_materials[board.material]
+        if material_info && material_info.is_a?(Hash)
+          price = material_info['price'] || 0
+          unique_board_types[board_key][:price_per_sheet] = price
+          unique_board_types[board_key][:total_cost] = unique_board_types[board_key][:count] * price
+        else
+          unique_board_types[board_key][:price_per_sheet] = 0
+          unique_board_types[board_key][:total_cost] = 0
+        end
 
         total_waste_area += board.waste_area
         overall_total_stock_area += board.total_area
@@ -77,6 +89,9 @@ module AutoNestCut
       end
 
       overall_waste_percentage = overall_total_stock_area > 0 ? (total_waste_area.to_f / overall_total_stock_area * 100).round(2) : 0
+      
+      # Calculate total project cost
+      total_project_cost = unique_board_types.values.sum { |board| board[:total_cost] || 0 }
 
       {
         parts_placed: parts_placed_on_boards,
@@ -91,7 +106,8 @@ module AutoNestCut
           total_used_area: (overall_total_stock_area - total_waste_area).round(2),
           total_waste_area: total_waste_area.round(2),
           overall_waste_percentage: overall_waste_percentage,
-          overall_efficiency: (100.0 - overall_waste_percentage).round(2)
+          overall_efficiency: (100.0 - overall_waste_percentage).round(2),
+          total_project_cost: total_project_cost.round(2)
         }
       }
     end
@@ -100,66 +116,66 @@ module AutoNestCut
       CSV.open(filename, 'w') do |csv|
         csv << ["UNIQUE PART TYPES SUMMARY"]
         csv << ["Name", "Width(mm)", "Height(mm)", "Thickness(mm)", "Material", "Grain Direction", "Total Quantity", "Total Area(mm²)"]
-        report_data[:unique_part_types].each do |part_type|
+        (report_data[:unique_part_types] || []).each do |part_type|
           csv << [
-            part_type[:name],
-            part_type[:width],
-            part_type[:height],
-            part_type[:thickness],
-            part_type[:material],
-            part_type[:grain_direction],
-            part_type[:total_quantity],
-            part_type[:total_area].round(2)
+            part_type[:name].to_s,
+            (part_type[:width] || 0).to_f,
+            (part_type[:height] || 0).to_f,
+            (part_type[:thickness] || 0).to_f,
+            part_type[:material].to_s,
+            part_type[:grain_direction].to_s,
+            (part_type[:total_quantity] || 0).to_i,
+            (part_type[:total_area] || 0).to_f.round(2)
           ]
         end
         csv << []
 
         csv << ["PARTS PLACED (DETAILED LIST)"]
         csv << ["Unique ID", "Name", "Width(mm)", "Height(mm)", "Thickness(mm)", "Material", "Area(mm²)", "Board#", "X Pos(mm)", "Y Pos(mm)", "Rotated", "Grain Direction"]
-        report_data[:parts_placed].each do |part_instance|
+        (report_data[:parts_placed] || []).each do |part_instance|
           csv << [
-            part_instance[:part_unique_id],
-            part_instance[:name],
-            part_instance[:width],
-            part_instance[:height],
-            part_instance[:thickness],
-            part_instance[:material],
-            part_instance[:area],
-            part_instance[:board_number],
-            part_instance[:position_x],
-            part_instance[:position_y],
-            part_instance[:rotated],
-            part_instance[:grain_direction]
+            part_instance[:part_unique_id].to_s,
+            part_instance[:name].to_s,
+            (part_instance[:width] || 0).to_f,
+            (part_instance[:height] || 0).to_f,
+            (part_instance[:thickness] || 0).to_f,
+            part_instance[:material].to_s,
+            (part_instance[:area] || 0).to_f,
+            (part_instance[:board_number] || 0).to_i,
+            (part_instance[:position_x] || 0).to_f,
+            (part_instance[:position_y] || 0).to_f,
+            part_instance[:rotated].to_s,
+            part_instance[:grain_direction].to_s
           ]
         end
         csv << []
 
         csv << ["BOARDS SUMMARY"]
         csv << ["Board#", "Material", "Stock Size", "Parts Count", "Used Area(mm²)", "Waste Area(mm²)", "Waste %", "Efficiency %"]
-        report_data[:boards].each do |board|
+        (report_data[:boards] || []).each do |board|
           csv << [
-            board[:board_number],
-            board[:material],
-            board[:stock_size],
-            board[:parts_count],
-            board[:used_area],
-            board[:waste_area],
-            board[:waste_percentage],
-            board[:efficiency]
+            (board[:board_number] || 0).to_i,
+            board[:material].to_s,
+            board[:stock_size].to_s,
+            (board[:parts_count] || 0).to_i,
+            (board[:used_area] || 0).to_f,
+            (board[:waste_area] || 0).to_f,
+            (board[:waste_percentage] || 0).to_f,
+            (board[:efficiency] || 0).to_f
           ]
         end
         csv << []
 
-        summary = report_data[:summary]
+        summary = report_data[:summary] || {}
         csv << ["OVERALL SUMMARY"]
-        csv << ["Total Parts Instances", summary[:total_parts_instances]]
-        csv << ["Total Unique Part Types", summary[:total_unique_part_types]]
-        csv << ["Total Boards", summary[:total_boards]]
-        csv << ["Total Stock Area (mm²)", summary[:total_stock_area]]
-        csv << ["Total Used Area (mm²)", summary[:total_used_area]]
-        csv << ["Total Waste Area (mm²)", summary[:total_waste_area]]
-        csv << ["Overall Waste %", summary[:overall_waste_percentage]]
-        csv << ["Overall Efficiency %", summary[:overall_efficiency]]
+        csv << ["Total Parts Instances", (summary[:total_parts_instances] || 0).to_i]
+        csv << ["Total Unique Part Types", (summary[:total_unique_part_types] || 0).to_i]
+        csv << ["Total Boards", (summary[:total_boards] || 0).to_i]
+        csv << ["Total Stock Area (mm²)", (summary[:total_stock_area] || 0).to_f]
+        csv << ["Total Used Area (mm²)", (summary[:total_used_area] || 0).to_f]
+        csv << ["Total Waste Area (mm²)", (summary[:total_waste_area] || 0).to_f]
+        csv << ["Overall Waste %", (summary[:overall_waste_percentage] || 0).to_f]
+        csv << ["Overall Efficiency %", (summary[:overall_efficiency] || 0).to_f]
       end
     end
   end

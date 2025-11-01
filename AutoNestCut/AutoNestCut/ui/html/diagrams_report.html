@@ -8,8 +8,10 @@
 <body>
     <div class="header">
         <h1>AutoNestCut Diagrams & Report</h1>
+        <button id="backButton">← Back to Configuration</button>
         <button id="printButton">Print / Save as PDF</button>
         <button id="exportCsvButton">Export CSV Report</button>
+        <button id="exportHtmlButton">Export Interactive HTML</button>
     </div>
 
     <div class="container">
@@ -43,7 +45,6 @@
         <div class="modal-content">
             <span class="close">&times;</span>
             <div class="modal-controls">
-                <button id="textureToggle">Material Texture</button>
                 <button id="projectionToggle">Orthographic</button>
             </div>
             <canvas id="modalCanvas" width="500" height="400"></canvas>

@@ -9,14 +9,18 @@ module AutoNestCut
 
       part_types_by_material_and_quantities.each do |material, types_and_quantities_for_material|
         stock_dims = stock_materials_config[material]
-        if stock_dims.nil? || stock_dims.length != 2
+        if stock_dims.nil?
           # Auto-assign default sheet size for detected materials
           stock_width, stock_height = 2440.0, 1220.0
           puts "Using default sheet size for material: #{material}"
-          # Add to settings for config dialog
-          stock_materials_config[material] = [stock_width, stock_height]
-        else
+          stock_materials_config[material] = { 'width' => stock_width, 'height' => stock_height, 'price' => 0 }
+        elsif stock_dims.is_a?(Hash)
+          stock_width = stock_dims['width'].to_f
+          stock_height = stock_dims['height'].to_f
+        elsif stock_dims.is_a?(Array) && stock_dims.length == 2
           stock_width, stock_height = stock_dims[0].to_f, stock_dims[1].to_f
+        else
+          stock_width, stock_height = 2440.0, 1220.0
         end
 
         all_individual_parts_to_place = []

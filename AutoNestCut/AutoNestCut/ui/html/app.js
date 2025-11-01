@@ -1,5 +1,6 @@
 let currentSettings = {};
 let partsData = {};
+let modelMaterials = [];
 
 function receiveInitialData(data) {
     currentSettings = data.settings;
@@ -9,43 +10,17 @@ function receiveInitialData(data) {
     displayPartsPreview();
 }
 
-function populateSettings() {
-    document.getElementById('kerf_width').value = currentSettings.kerf_width || 3.0;
-    document.getElementById('allow_rotation').checked = currentSettings.allow_rotation !== false;
-    
-    displayMaterials();
-}
-
-function displayMaterials() {
-    const container = document.getElementById('materials_list');
-    container.innerHTML = '';
-    
-    const materials = currentSettings.stock_materials || {};
-    
-    Object.keys(materials).forEach(material => {
-        const dims = materials[material];
-        const div = document.createElement('div');
-        div.className = 'material-item';
-        div.innerHTML = `
-            <input type="text" value="${material}" onchange="updateMaterialName(this, '${material}')">
-            <input type="number" value="${dims[0]}" onchange="updateMaterialWidth(this, '${material}')" placeholder="Width">
-            <input type="number" value="${dims[1]}" onchange="updateMaterialHeight(this, '${material}')" placeholder="Height">
-            <button onclick="removeMaterial('${material}')">Remove</button>
-        `;
-        container.appendChild(div);
-    });
-}
-
 function addMaterial() {
-    const name = prompt('Material name:');
-    if (!name) return;
+    const container = document.getElementById('materials_list');
+    const materialName = `New_Material_${Date.now()}`;
     
-    const width = parseFloat(prompt('Width (mm):', '2440'));
-    const height = parseFloat(prompt('Height (mm):', '1220'));
+    currentSettings.stock_materials = currentSettings.stock_materials || {};
+    currentSettings.stock_materials[materialName] = {
+        width: 2440,
+        height: 1220,
+        price: 0
+    };
     
-    if (isNaN(width) || isNaN(height)) return;
-    
-    currentSettings.stock_materials[name] = [width, height];
     displayMaterials();
 }
 
@@ -63,12 +38,84 @@ function updateMaterialName(input, oldName) {
 }
 
 function updateMaterialWidth(input, material) {
-    currentSettings.stock_materials[material][0] = parseFloat(input.value);
+    const data = currentSettings.stock_materials[material];
+    if (Array.isArray(data)) {
+        currentSettings.stock_materials[material] = { width: parseFloat(input.value), height: data[1], price: 0 };
+    } else {
+        currentSettings.stock_materials[material].width = parseFloat(input.value);
+    }
 }
 
 function updateMaterialHeight(input, material) {
-    currentSettings.stock_materials[material][1] = parseFloat(input.value);
+    const data = currentSettings.stock_materials[material];
+    if (Array.isArray(data)) {
+        currentSettings.stock_materials[material] = { width: data[0], height: parseFloat(input.value), price: 0 };
+    } else {
+        currentSettings.stock_materials[material].height = parseFloat(input.value);
+    }
 }
+
+function updateMaterialPrice(input, material) {
+    const data = currentSettings.stock_materials[material];
+    if (Array.isArray(data)) {
+        currentSettings.stock_materials[material] = { width: data[0], height: data[1], price: parseFloat(input.value) };
+    } else {
+        currentSettings.stock_materials[material].price = parseFloat(input.value);
+    }
+}
+
+function populateSettings() {
+    document.getElementById('kerf_width').value = currentSettings.kerf_width || 3.0;
+    document.getElementById('allow_rotation').checked = currentSettings.allow_rotation !== false;
+    
+    // Initialize stock_materials if it doesn't exist
+    if (!currentSettings.stock_materials) {
+        currentSettings.stock_materials = {
+            'Plywood_19mm': { width: 2440, height: 1220, price: 0 },
+            'Plywood_12mm': { width: 2440, height: 1220, price: 0 },
+            'MDF_16mm': { width: 2800, height: 2070, price: 0 },
+            'MDF_19mm': { width: 2800, height: 2070, price: 0 }
+        };
+    }
+    
+    displayMaterials();
+}
+
+function displayMaterials() {
+    const container = document.getElementById('materials_list');
+    container.innerHTML = '';
+    
+    currentSettings.stock_materials = currentSettings.stock_materials || {};
+    const materials = currentSettings.stock_materials;
+    
+    Object.keys(materials).forEach(material => {
+        const data = materials[material];
+        let width, height, price;
+        
+        if (Array.isArray(data)) {
+            width = data[0] || 2440;
+            height = data[1] || 1220;
+            price = 0;
+        } else {
+            width = data.width || 2440;
+            height = data.height || 1220;
+            price = data.price || 0;
+        }
+        
+        const div = document.createElement('div');
+        div.className = 'material-item';
+        div.innerHTML = `
+            <input type="text" value="${material}" onchange="updateMaterialName(this, '${material}')" placeholder="Material Name">
+            <input type="number" value="${width}" onchange="updateMaterialWidth(this, '${material}')" placeholder="Width (mm)">
+            <input type="number" value="${height}" onchange="updateMaterialHeight(this, '${material}')" placeholder="Height (mm)">
+            <input type="number" value="${price}" step="0.01" onchange="updateMaterialPrice(this, '${material}')" placeholder="Price per sheet">
+            <button onclick="removeMaterial('${material}')">Remove</button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+
 
 function displayPartsPreview() {
     const container = document.getElementById('parts_preview');
@@ -79,7 +126,12 @@ function displayPartsPreview() {
         html += `<h4>${material} (${parts.length} parts)</h4>`;
         html += '<ul>';
         parts.forEach(part => {
-            html += `<li>${part.name}: ${part.width.toFixed(1)} × ${part.height.toFixed(1)} × ${part.thickness.toFixed(1)}mm</li>`;
+            const name = part.name || 'Unnamed Part';
+            const width = part.width || 0;
+            const height = part.height || 0;
+            const thickness = part.thickness || 0;
+            const quantity = part.total_quantity || 1;
+            html += `<li>${name} (${quantity}x): ${width.toFixed(1)} × ${height.toFixed(1)} × ${thickness.toFixed(1)}mm</li>`;
         });
         html += '</ul>';
     });
@@ -92,11 +144,35 @@ function processNesting() {
     currentSettings.kerf_width = parseFloat(document.getElementById('kerf_width').value);
     currentSettings.allow_rotation = document.getElementById('allow_rotation').checked;
     
+    // Convert stock_materials to proper format for Ruby
+    const convertedSettings = {
+        kerf_width: currentSettings.kerf_width,
+        allow_rotation: currentSettings.allow_rotation,
+        stock_materials: {}
+    };
+    
+    Object.keys(currentSettings.stock_materials || {}).forEach(material => {
+        const data = currentSettings.stock_materials[material];
+        convertedSettings.stock_materials[material] = {
+            width: data.width || 2440,
+            height: data.height || 1220,
+            price: data.price || 0
+        };
+    });
+    
     // Send to SketchUp
-    sketchup.process(JSON.stringify(currentSettings));
+    callRuby('process', JSON.stringify(convertedSettings));
+}
+
+function callRuby(method, args) {
+    if (typeof sketchup === 'object' && sketchup[method]) {
+        sketchup[method](args);
+    } else {
+        console.log('Ruby call:', method, args);
+    }
 }
 
 // Initialize when page loads
 window.addEventListener('load', function() {
-    sketchup.ready();
+    callRuby('ready');
 });
