@@ -160,6 +160,11 @@ h2 {
 }
 
 @media print {
+    @page {
+        margin: 0.75in;
+        size: letter;
+    }
+    
     * {
         -webkit-print-color-adjust: exact !important;
         color-adjust: exact !important;
@@ -167,10 +172,10 @@ h2 {
     
     body {
         font-family: Arial, sans-serif;
-        font-size: 12pt;
-        line-height: 1.4;
+        font-size: 11pt;
+        line-height: 1.3;
         margin: 0;
-        padding: 20pt;
+        padding: 0;
         background: white;
         color: black;
         display: block;
@@ -178,107 +183,136 @@ h2 {
     }
     
     .header {
-        display: block;
+        text-align: center;
         background: none;
         color: black;
-        border-bottom: 2pt solid black;
+        border-bottom: 2pt solid #333;
         margin-bottom: 20pt;
-        padding: 10pt 0;
+        padding: 15pt 0;
     }
     
     .header h1 {
-        font-size: 18pt;
+        font-size: 20pt;
         font-weight: bold;
         margin: 0;
+        color: #333;
     }
     
-    button {
-        display: none;
+    .tabs, button, .resizer, .report-header {
+        display: none !important;
     }
     
     .container {
         display: block;
         width: 100%;
-        flex: none;
-        overflow: visible;
     }
     
-    .diagrams-container, .report-container {
+    .diagrams-container {
+        display: block;
+        width: 100%;
+        margin-bottom: 30pt;
+        page-break-after: always;
+    }
+    
+    .report-container {
         display: block;
         width: 100%;
         margin: 0;
         padding: 0;
-        border: none;
-        overflow: visible;
-        flex: none;
     }
     
-    .report-container {
-        page-break-before: always;
+    .project-info {
+        background: #f8f8f8;
+        border: 1pt solid #ccc;
+        padding: 15pt;
+        margin-bottom: 20pt;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 15pt;
     }
     
     .diagram-card {
         page-break-inside: avoid;
-        margin-bottom: 15pt;
-        border: 1pt solid black;
-        padding: 10pt;
+        margin-bottom: 20pt;
+        border: 1pt solid #333;
+        padding: 12pt;
         background: white;
-        box-shadow: none;
-        border-radius: 0;
+        text-align: center;
     }
     
     .diagram-card h3 {
         font-size: 14pt;
         font-weight: bold;
-        margin: 0 0 5pt 0;
-        color: black;
+        margin: 0 0 8pt 0;
+        color: #333;
     }
     
     .diagram-card p {
         font-size: 10pt;
-        margin: 0 0 10pt 0;
-        color: black;
+        margin: 0 0 12pt 0;
+        color: #666;
     }
     
     .diagram-canvas {
         max-width: 100%;
         height: auto;
-        border: 1pt solid black;
+        border: 1pt solid #666;
         background: white;
     }
     
     h2 {
         font-size: 16pt;
         font-weight: bold;
-        margin: 20pt 0 10pt 0;
-        color: black;
-        border-bottom: 1pt solid black;
-        padding-bottom: 5pt;
+        margin: 25pt 0 12pt 0;
+        color: #333;
+        border-bottom: 1pt solid #333;
+        padding-bottom: 6pt;
         page-break-after: avoid;
     }
     
     table {
         width: 100%;
         border-collapse: collapse;
-        margin-bottom: 15pt;
-        font-size: 10pt;
+        margin-bottom: 20pt;
+        font-size: 9pt;
         page-break-inside: auto;
     }
     
     th, td {
-        border: 1pt solid black;
-        padding: 4pt 6pt;
+        border: 1pt solid #333;
+        padding: 6pt 8pt;
         text-align: left;
         vertical-align: top;
     }
     
     th {
-        background: #f0f0f0;
+        background: #e8e8e8;
+        font-weight: bold;
+        font-size: 10pt;
+    }
+    
+    .total-highlight {
+        background: #d4edda !important;
         font-weight: bold;
     }
     
     tr {
         page-break-inside: avoid;
+    }
+    
+    #materialsContainer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10pt;
+        margin-bottom: 15pt;
+    }
+    
+    .material-item {
+        border: 1pt solid #666;
+        padding: 8pt;
+        background: #f5f5f5;
+        display: inline-flex;
+        align-items: center;
     }
 }
 /* Modal styles */

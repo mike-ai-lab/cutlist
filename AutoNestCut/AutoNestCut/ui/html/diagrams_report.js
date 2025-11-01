@@ -437,6 +437,8 @@ function exportInteractiveHTML() {
         
         ${getJSContent()}
         
+
+        
         document.addEventListener('DOMContentLoaded', () => {
             renderDiagrams();
             renderReport();

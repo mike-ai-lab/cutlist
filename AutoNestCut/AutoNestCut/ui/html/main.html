@@ -167,8 +167,7 @@
                 printBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    document.title = 'AutoNestCut_Report';
-                    setTimeout(() => window.print(), 200);
+                    exportToPDF();
                 });
             }
             
@@ -197,6 +196,15 @@
             }
             
             exportButtonsInitialized = true;
+        }
+        
+        function exportToPDF() {
+            const modelName = document.title || 'Untitled';
+            const timestamp = new Date().toISOString().slice(0,10);
+            const filename = `AutoNestCut_Report_${modelName.replace(/[^\w]/g, '_')}_${timestamp}`;
+            
+            document.title = filename;
+            window.print();
         }
 
         function showError(message) {

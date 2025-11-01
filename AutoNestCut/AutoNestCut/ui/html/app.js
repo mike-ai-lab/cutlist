@@ -131,7 +131,9 @@ function displayPartsPreview() {
             const height = part.height || 0;
             const thickness = part.thickness || 0;
             const quantity = part.total_quantity || 1;
-            html += `<li>${name} (${quantity}x): ${width.toFixed(1)} × ${height.toFixed(1)} × ${thickness.toFixed(1)}mm</li>`;
+            if (width > 0 && height > 0 && thickness > 0) {
+                html += `<li>${name} (${quantity}x): ${width.toFixed(1)} × ${height.toFixed(1)} × ${thickness.toFixed(1)}mm</li>`;
+            }
         });
         html += '</ul>';
     });
