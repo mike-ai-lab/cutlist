@@ -1,0 +1,1352 @@
+Okay, here are the detailed instructions you should send to your VS Code AI model. Copy and paste this entire message. I've broken it down file by file with clear actions for the AI to perform.
+
+---
+
+**Instructions for VS Code AI Model: AutoNestCut Extension - Ultimate Solution for Quantity Handling and Reporting**
+
+**Objective:** Implement a robust solution for handling part quantities, differentiating between "part types" and "part instances," and generating a clearer cut list report with two main sections: "Unique Part Types Summary" and "Parts Placed (Detailed)". The visual diagrams will remain canvas-based in the HTML dialog, with updated labels.
+
+---
+
+### **Core Concept for AI:**
+
+The fundamental change is how `Part` objects are created and managed:
+1.  A `Part` object now represents a **"Part Type"** (e.g., "Back board"). It holds the generic dimensions, material, and grain.
+2.  When the `Nester` needs to place a physical piece, it will ask a "Part Type" to `create_placed_instance`. This creates a new `Part` object (a "Part Instance") that will then track its own `x`, `y` position, `rotated` state, and a unique `instance_id` (e.g., "P1").
+3.  The `ModelAnalyzer` will identify unique component definitions and count their total instances, passing this count to the `Nester`.
+4.  The `ReportGenerator` will aggregate these instances back into a summary of "Part Types" and also provide a detailed list of all "Part Instances."
+
+---
+
+### **File-by-File Instructions:**
+
+---
+### **1. `AutoNestCut/models/part.rb`**
+
+**Action:** Refactor the `Part` class to represent a "Part Type" and add a method to create "Part Instances."
+
+```ruby
+# REPLACE the ENTIRE content of AutoNestCut/models/part.rb with this:
+module AutoNestCut
+  class Part
+    # Attributes for the PART TYPE
+    attr_accessor :name, :width, :height, :thickness, :material, :grain_direction
+    attr_reader :original_definition # Reference to the SketchUp ComponentDefinition
+
+    # Attributes for a specific PLACED INSTANCE of this part type (set by Nester/ReportGenerator)
+    attr_accessor :x, :y, :rotated
+    attr_accessor :instance_id # NEW: A unique ID for each *placed physical piece* (e.g., P1, P2)
+
+    # Initialize with a ComponentDefinition. This Part object now represents a *type*.
+    def initialize(component_definition)
+      @original_definition = component_definition
+      @name = component_definition.name
+
+      # Dimensions derived from the definition's bounding box (Util.get_dimensions returns mm as raw numbers)
+      dimensions_mm = Util.get_dimensions(component_definition.bounds).sort
+      @thickness = dimensions_mm[0]
+      @width = dimensions_mm[1]
+      @height = dimensions_mm[2]
+
+      @material = Config.get_material_from_component_definition(component_definition)
+      @grain_direction = Config.get_grain_direction_from_definition(component_definition)
+
+      # Initialize instance-specific attributes (they will be set by Nester when placed)
+      @x = 0.0
+      @y = 0.0
+      @rotated = false
+      @instance_id = nil # To be assigned during placement/reporting
+    end
+
+    # Creates a shallow copy of this part *type* to represent one individual physical piece.
+    # This is what the Nester will actually place.
+    def create_placed_instance
+      placed_part = self.dup # Shallow copy of the Part object (type attributes are copied)
+      placed_part.instance_id = nil # Reset for this specific instance
+      placed_part.x = 0.0 # Reset for this specific instance
+      placed_part.y = 0.0 # Reset for this specific instance
+      placed_part.rotated = false # Reset for this specific instance
+      placed_part
+    end
+
+    def area
+      @width * @height
+    end
+
+    def rotate!
+      return false if @grain_direction && @grain_direction.downcase == 'fixed'
+      @width, @height = @height, @width
+      @rotated = !@rotated
+      true
+    end
+
+    def can_rotate?
+      @grain_direction.nil? || @grain_direction.downcase != 'fixed'
+    end
+
+    def fits_in?(board_width, board_height, kerf_width = 0)
+      w_with_kerf = @width + kerf_width
+      h_with_kerf = @height + kerf_width
+
+      return true if w_with_kerf <= board_width && h_with_kerf <= board_height
+      if can_rotate?
+        return true if h_with_kerf <= board_width && w_with_kerf <= board_height
+      end
+      false
+    end
+
+    # to_h should reflect properties of a *placed instance*
+    def to_h
+      {
+        name: @name, # This is the type name (e.g., "Back board")
+        width: @width.round(2),
+        height: @height.round(2),
+        thickness: @thickness.round(2),
+        material: @material,
+        grain_direction: @grain_direction,
+        area: area.round(2),
+        x: @x.round(2),
+        y: @y.round(2),
+        rotated: @rotated,
+        instance_id: @instance_id # Unique ID for this specific placed piece
+      }
+    end
+  end
+end
+```
+
+---
+### **2. `AutoNestCut/processors/model_analyzer.rb`**
+
+**Action:** Modify `ModelAnalyzer` to count instances of each unique `ComponentDefinition` and return a list of "Part Types" along with their total required quantities.
+
+```ruby
+# REPLACE the ENTIRE content of AutoNestCut/processors/model_analyzer.rb with this:
+module AutoNestCut
+  class ModelAnalyzer
+
+    def extract_parts_from_selection(selection)
+      definition_counts = {} # Maps Sketchup::ComponentDefinition => count of its instances
+
+      selection.each do |entity|
+        count_component_instances(entity, definition_counts)
+      end
+
+      # This hash will store: material_name => array of {part_type: Part, total_quantity: int}
+      part_types_by_material = {}
+
+      definition_counts.each do |definition, total_count_for_type|
+        if Util.is_sheet_good?(definition.bounds)
+          part_type = Part.new(definition) # Create one Part object per unique definition (representing the type)
+          material = part_type.material
+          part_types_by_material[material] ||= []
+          # Store the Part object (type) and its total required quantity
+          part_types_by_material[material] << { part_type: part_type, total_quantity: total_count_for_type }
+        end
+      end
+
+      part_types_by_material # This now contains Part objects with their total quantities
+    end
+
+    private
+
+    # Recursively counts component instances by their definition
+    def count_component_instances(entity, definition_counts)
+      if entity.is_a?(Sketchup::ComponentInstance)
+        definition_counts[entity.definition] ||= 0
+        definition_counts[entity.definition] += 1
+      elsif entity.is_a?(Sketchup::Group)
+        entity.entities.each { |child_entity| count_component_instances(child_entity, definition_counts) }
+      end
+    end
+  end
+end
+```
+
+---
+### **3. `AutoNestCut/processors/nester.rb`**
+
+**Action:** Modify `Nester` to take the "Part Types" and their quantities, expand them into individual "Part Instances" (using `Part#create_placed_instance`), and then nest these instances.
+
+```ruby
+# REPLACE the ENTIRE content of AutoNestCut/processors/nester.rb with this:
+module AutoNestCut
+  class Nester
+
+    # `part_types_by_material_and_quantities` is now: material_name => array of {part_type: Part, total_quantity: int}
+    def optimize_boards(part_types_by_material_and_quantities, settings)
+      boards = []
+      stock_materials_config = settings['stock_materials']
+      kerf_width = settings['kerf_width'].to_f || 3.0
+      allow_rotation = settings['allow_rotation'] || true
+
+      part_types_by_material_and_quantities.each do |material, types_and_quantities_for_material|
+        stock_dims = stock_materials_config[material]
+        if stock_dims.nil? || stock_dims.length != 2
+          UI.messagebox("Warning: No valid stock dimensions found for material '#{material}'. Skipping parts for this material.")
+          next
+        end
+        stock_width, stock_height = stock_dims[0].to_f, stock_dims[1].to_f
+
+        # Expand part types into individual Part instances that need to be placed
+        all_individual_parts_to_place = []
+        types_and_quantities_for_material.each do |entry|
+          part_type = entry[:part_type]
+          total_quantity = entry[:total_quantity]
+          total_quantity.times do
+            individual_part_instance = part_type.create_placed_instance # Create a distinct Part object for each physical piece
+            all_individual_parts_to_place << individual_part_instance
+          end
+        end
+
+        material_boards = nest_individual_parts(all_individual_parts_to_place, material, stock_width, stock_height, kerf_width, allow_rotation)
+        boards.concat(material_boards)
+      end
+      boards
+    end
+
+    private
+
+    # This method now takes `individual_part_instances` (each is a `Part` object created by create_placed_instance)
+    def nest_individual_parts(individual_parts_to_place, material, stock_width, stock_height, kerf_width, allow_rotation)
+      boards = []
+      remaining_parts = individual_parts_to_place.dup
+
+      remaining_parts.sort_by! { |part_instance| -part_instance.area }
+
+      while !remaining_parts.empty?
+        board = Board.new(material, stock_width, stock_height)
+        parts_successfully_placed_on_this_board = []
+        parts_that_could_not_fit_yet = []
+
+        remaining_parts.each do |part_instance| # Iterate through each individual physical piece
+          if try_place_part_on_board(part_instance, board, kerf_width, allow_rotation)
+            parts_successfully_placed_on_this_board << part_instance
+          else
+            parts_that_could_not_fit_yet << part_instance
+          end
+        end
+        remaining_parts = parts_that_could_not_fit_yet
+
+        if !parts_successfully_placed_on_this_board.empty?
+          boards << board
+        else
+          UI.messagebox("Warning: Could not place #{remaining_parts.length} parts of material '#{material}' on a new board. They might be too large or the nesting algorithm failed.", MB_OK) if !remaining_parts.empty?
+          break
+        end
+      end
+      boards
+    end
+
+    def try_place_part_on_board(part_instance, board, kerf_width, allow_rotation)
+      # This method operates on a single `part_instance` (which is a Part object)
+      original_width = part_instance.width
+      original_height = part_instance.height
+      original_rotated_state = part_instance.rotated
+
+      position = board.find_best_position(part_instance, kerf_width)
+      if position
+        board.add_part(part_instance, position[0], position[1]) # Add the specific instance to the board
+        return true
+      end
+
+      if allow_rotation && part_instance.can_rotate?
+        part_instance.rotate!
+        position = board.find_best_position(part_instance, kerf_width)
+        if position
+          board.add_part(part_instance, position[0], position[1])
+          return true
+        else
+          # Restore part_instance state if rotation didn't help
+          part_instance.rotate!
+          part_instance.width = original_width
+          part_instance.height = original_height
+          part_instance.rotated = original_rotated_state
+        end
+      end
+      false
+    end
+  end
+end
+```
+
+---
+### **4. `AutoNestCut/config.rb`**
+
+**Action:** Ensure material and grain direction retrieval methods are correctly fetching from `ComponentDefinition` (as `Part#initialize` now takes a definition). These methods were mostly correct from the previous iteration, but double-check.
+
+```ruby
+# REPLACE the ENTIRE content of AutoNestCut/config.rb with this:
+module AutoNestCut
+  module Config
+
+    DEFAULT_SETTINGS = {
+      'kerf_width' => 3.0, # mm
+      'allow_rotation' => true,
+      'stock_materials' => {
+        'Plywood_19mm' => [2440.0, 1220.0], # width, height in mm
+        'Plywood_12mm' => [2440.0, 1220.0],
+        'MDF_16mm' => [2800.0, 2070.0],
+        'MDF_19mm' => [2800.0, 2070.0]
+      }
+    }
+
+    def self.load_settings
+      settings = {}
+      DEFAULT_SETTINGS.each do |key, value|
+        read_value = Sketchup.read_default('AutoNestCut', key, value)
+
+        if key == 'stock_materials' && read_value.is_a?(Hash)
+          settings[key] = read_value.transform_values { |dims| dims.map(&:to_f) }
+        else
+          settings[key] = read_value
+        end
+      end
+      settings
+    end
+
+    def self.save_settings(settings)
+      settings.each do |key, value|
+        Sketchup.write_default('AutoNestCut', key, value)
+      end
+    end
+
+    # Determines the material for a given component definition
+    # This now takes a ComponentDefinition, not a ComponentInstance
+    def self.get_material_from_component_definition(component_definition)
+      # 1. Try custom attribute 'AutoNestCut::Material' on the definition itself
+      if component_definition.attribute_dictionaries && component_definition.attribute_dictionaries['AutoNestCut']
+        material = component_definition.attribute_dictionaries['AutoNestCut']['Material']
+        return material.to_s if material && !material.empty?
+      end
+
+      # 2. Try inferring from component definition name
+      name = component_definition.name.to_s.downcase
+      load_settings['stock_materials'].keys.each do |material_key|
+        return material_key if name.include?(material_key.downcase)
+      end
+
+      # 3. Default material
+      DEFAULT_SETTINGS['stock_materials'].keys.first
+    end
+
+    # Determines the grain direction for a given component definition
+    # This now takes a ComponentDefinition, not a ComponentInstance
+    def self.get_grain_direction_from_definition(component_definition)
+      # Try custom attribute 'AutoNestCut::GrainDirection' on the definition itself
+      if component_definition.attribute_dictionaries && component_definition.attribute_dictionaries['AutoNestCut']
+        grain = component_definition.attribute_dictionaries['AutoNestCut']['GrainDirection']
+        return grain.to_s.downcase if grain && !grain.empty?
+      end
+      nil # Default to no specific grain direction (allows rotation)
+    end
+  end
+end
+```
+
+---
+### **5. `AutoNestCut/exporters/report_generator.rb`**
+
+**Action:** Restructure the `generate_report_data` method to create both `parts_placed` (detailed instances) and `unique_part_types` (summarized types), and update `export_csv` to output these.
+
+```ruby
+# REPLACE the ENTIRE content of AutoNestCut/exporters/report_generator.rb with this:
+require 'csv'
+
+module AutoNestCut
+  class ReportGenerator
+
+    def generate_report_data(boards)
+      parts_placed_on_boards = [] # List of each individual Part object that was placed
+      unique_part_types_summary = {} # Aggregated summary of Part types
+
+      boards_summary = []
+      total_waste_area = 0
+      overall_total_stock_area = 0
+
+      global_part_instance_counter = 1 # To assign unique P# IDs (P1, P2, etc.)
+
+      boards.each_with_index do |board, board_idx|
+        board_number = board_idx + 1
+        board_info = {
+          board_number: board_number,
+          material: board.material,
+          stock_size: "#{board.stock_width.round(1)}mm x #{board.stock_height.round(1)}mm",
+          parts_count: board.parts_on_board.length,
+          used_area: board.used_area.round(2),
+          waste_area: board.waste_area.round(2),
+          waste_percentage: board.calculate_waste_percentage,
+          efficiency: board.efficiency_percentage
+        }
+        boards_summary << board_info
+
+        total_waste_area += board.waste_area
+        overall_total_stock_area += board.total_area
+
+        board.parts_on_board.each do |part_instance| # These are the individual Part objects (instances)
+          part_instance.instance_id = "P#{global_part_instance_counter}" # Assign unique P# ID
+          global_part_instance_counter += 1
+
+          parts_placed_on_boards << {
+            part_unique_id: part_instance.instance_id,
+            name: part_instance.name, # This is the type name (e.g., "Back board")
+            width: part_instance.width.round(2),
+            height: part_instance.height.round(2),
+            thickness: part_instance.thickness.round(2),
+            material: part_instance.material,
+            area: part_instance.area.round(2),
+            board_number: board_number,
+            position_x: part_instance.x.round(2),
+            position_y: part_instance.y.round(2),
+            rotated: part_instance.rotated ? "Yes" : "No",
+            grain_direction: part_instance.grain_direction || "Any"
+          }
+
+          # Aggregate for the unique part types summary
+          # Using `part_instance.name` for grouping unique types
+          unique_part_types_summary[part_instance.name] ||= {
+            name: part_instance.name,
+            width: part_instance.width.round(2),
+            height: part_instance.height.round(2),
+            thickness: part_instance.thickness.round(2),
+            material: part_instance.material,
+            grain_direction: part_instance.grain_direction || "Any",
+            total_quantity: 0,
+            total_area: 0.0 # Sum of areas of all instances of this type
+          }
+          unique_part_types_summary[part_instance.name][:total_quantity] += 1
+          unique_part_types_summary[part_instance.name][:total_area] += part_instance.area
+        end
+      end
+
+      overall_waste_percentage = overall_total_stock_area > 0 ? (total_waste_area.to_f / overall_total_stock_area * 100).round(2) : 0
+
+      {
+        parts_placed: parts_placed_on_boards, # Detailed list of each physical piece
+        unique_part_types: unique_part_types_summary.values.sort_by { |p| p[:name] }, # Summarized list of part types
+        boards: boards_summary,
+        summary: {
+          total_parts_instances: parts_placed_on_boards.length, # Total count of physical pieces
+          total_unique_part_types: unique_part_types_summary.keys.length, # Count of unique component definitions
+          total_boards: boards.length,
+          total_stock_area: overall_total_stock_area.round(2),
+          total_used_area: (overall_total_stock_area - total_waste_area).round(2),
+          total_waste_area: total_waste_area.round(2),
+          overall_waste_percentage: overall_waste_percentage,
+          overall_efficiency: (100.0 - overall_waste_percentage).round(2)
+        }
+      }
+    end
+
+    def export_csv(filename, report_data)
+      CSV.open(filename, 'w') do |csv|
+        # UNIQUE PART TYPES SUMMARY
+        csv << ["UNIQUE PART TYPES SUMMARY"]
+        csv << ["Name", "Width(mm)", "Height(mm)", "Thickness(mm)", "Material", "Grain Direction", "Total Quantity", "Total Area(mm²)"]
+        report_data[:unique_part_types].each do |part_type|
+          csv << [
+            part_type[:name],
+            part_type[:width],
+            part_type[:height],
+            part_type[:thickness],
+            part_type[:material],
+            part_type[:grain_direction],
+            part_type[:total_quantity],
+            part_type[:total_area].round(2)
+          ]
+        end
+        csv << []
+
+        # PARTS PLACED (DETAILED LIST)
+        csv << ["PARTS PLACED (DETAILED LIST)"]
+        csv << ["Unique ID", "Name", "Width(mm)", "Height(mm)", "Thickness(mm)", "Material", "Area(mm²)", "Board#", "X Pos(mm)", "Y Pos(mm)", "Rotated", "Grain Direction"]
+        report_data[:parts_placed].each do |part_instance|
+          csv << [
+            part_instance[:part_unique_id],
+            part_instance[:name],
+            part_instance[:width],
+            part_instance[:height],
+            part_instance[:thickness],
+            part_instance[:material],
+            part_instance[:area],
+            part_instance[:board_number],
+            part_instance[:position_x],
+            part_instance[:position_y],
+            part_instance[:rotated],
+            part_instance[:grain_direction]
+          ]
+        end
+        csv << []
+
+        # BOARDS SUMMARY
+        csv << ["BOARDS SUMMARY"]
+        csv << ["Board#", "Material", "Stock Size", "Parts Count", "Used Area(mm²)", "Waste Area(mm²)", "Waste %", "Efficiency %"]
+        report_data[:boards].each do |board|
+          csv << [
+            board[:board_number],
+            board[:material],
+            board[:stock_size],
+            board[:parts_count],
+            board[:used_area],
+            board[:waste_area],
+            board[:waste_percentage],
+            board[:efficiency]
+          ]
+        end
+        csv << []
+
+        # OVERALL SUMMARY
+        summary = report_data[:summary]
+        csv << ["OVERALL SUMMARY"]
+        csv << ["Total Parts Instances", summary[:total_parts_instances]]
+        csv << ["Total Unique Part Types", summary[:total_unique_part_types]]
+        csv << ["Total Boards", summary[:total_boards]]
+        csv << ["Total Stock Area (mm²)", summary[:total_stock_area]]
+        csv << ["Total Used Area (mm²)", summary[:total_used_area]]
+        csv << ["Total Waste Area (mm²)", summary[:total_waste_area]]
+        csv << ["Overall Waste %", summary[:overall_waste_percentage]]
+        csv << ["Overall Efficiency %", summary[:overall_efficiency]]
+      end
+    end
+  end
+end
+```
+
+---
+### **6. `AutoNestCut/exporters/diagram_generator.rb`**
+
+**Action:** This class should remain as a data formatter. The previous refactor already made it non-drawing. No significant changes here from the last version, but ensure its `prepare_diagram_data` works with the updated `Board#to_h` which now contains actual `Part` objects (instances) with `instance_id`.
+
+```ruby
+# REPLACE the ENTIRE content of AutoNestCut/exporters/diagram_generator.rb with this:
+module AutoNestCut
+  class DiagramGenerator
+    # This class will no longer draw anything into SketchUp's model.
+    # Instead, it will prepare the data needed for the HTML dialog to render.
+
+    # It takes the `boards` array, which contains Board objects,
+    # and each Board's `parts_on_board` array contains the Part objects (instances)
+    # with their assigned `instance_id`.
+    def prepare_diagram_data(boards)
+      # Convert boards (and their nested parts) into a structure easily consumable by JavaScript.
+      # The `to_h` method on Board and Part classes should already handle this well.
+      boards.map(&:to_h)
+    end
+  end
+end
+```
+
+---
+### **7. `AutoNestCut/main.rb`**
+
+**Action:** Adjust the call to `ModelAnalyzer.extract_parts_from_selection` and ensure the resulting data is correctly passed to `UIDialogManager.show_diagrams_and_report_dialog`.
+
+```ruby
+# REPLACE the ENTIRE content of AutoNestCut/main.rb with this:
+require 'sketchup.rb'
+require_relative 'AutoNestCut/config'
+require_relative 'AutoNestCut/models/part'
+require_relative 'AutoNestCut/models/board'
+require_relative 'AutoNestCut/processors/model_analyzer'
+require_relative 'AutoNestCut/processors/nester'
+require_relative 'AutoNestCut/ui/dialog_manager'
+require_relative 'AutoNestCut/exporters/diagram_generator'
+require_relative 'AutoNestCut/exporters/report_generator'
+require_relative 'AutoNestCut/util'
+
+module AutoNestCut
+
+  def self.activate_extension
+    model = Sketchup.active_model
+    selection = model.selection
+
+    if selection.empty?
+      UI.messagebox("Please select components or groups to analyze for AutoNestCut.", MB_OK)
+      return
+    end
+
+    begin
+      # Extract part types and their quantities from selection using ModelAnalyzer
+      # `part_types_by_material_and_quantities` will be: material_name => array of {part_type: Part, total_quantity: int}
+      analyzer = ModelAnalyzer.new
+      part_types_by_material_and_quantities = analyzer.extract_parts_from_selection(selection)
+
+      if part_types_by_material_and_quantities.empty?
+        UI.messagebox("No valid sheet good parts found in your selection for AutoNestCut. Please check your model or part filtering criteria.", MB_OK)
+        return
+      end
+
+      # Show the configuration dialog
+      dialog_manager = UIDialogManager.new
+      dialog_manager.show_config_dialog(part_types_by_material_and_quantities)
+
+    rescue => e
+      UI.messagebox("An error occurred during part extraction:\n#{e.message}\n#{e.backtrace.join("\n")}", MB_OK_CANCEL)
+    end
+  end
+
+  # This method is called by the UIDialogManager after the user saves settings and clicks "Process"
+  def self.process_nesting(part_types_by_material_and_quantities, settings)
+    begin
+      # Perform nesting optimization
+      nester = Nester.new
+      boards = nester.optimize_boards(part_types_by_material_and_quantities, settings)
+
+      if boards.empty?
+         UI.messagebox("No boards could be generated. This might mean no parts fit the available stock, or an issue with the nesting algorithm.", MB_OK)
+         return
+      end
+
+      # ReportGenerator prepares the textual report data
+      report_generator = ReportGenerator.new
+      report_data = report_generator.generate_report_data(boards)
+
+      # Show the combined diagrams and report dialog
+      dialog_manager = UIDialogManager.new
+      dialog_manager.show_diagrams_and_report_dialog(boards, report_data)
+
+    rescue => e
+      UI.messagebox("An error occurred during the nesting process:\n#{e.message}\n#{e.backtrace.join("\n")}", MB_OK_CANCEL)
+    end
+  end
+
+  # Setup SketchUp menu and toolbar items for the extension
+  unless file_loaded?(__FILE__)
+    menu = UI.menu('Plugins')
+    menu.add_item('AutoNestCut') { AutoNestCut.activate_extension }
+
+    toolbar = UI::Toolbar.new('AutoNestCut')
+    cmd = UI::Command.new('AutoNestCut') { AutoNestCut.activate_extension }
+    cmd.tooltip = 'Generate optimized cut lists and nesting diagrams for sheet goods'
+    cmd.status_bar_text = 'AutoNestCut - Automated nesting for sheet goods'
+    toolbar.add_item(cmd)
+    toolbar.show
+
+    file_loaded(__FILE__)
+  end
+end
+```
+
+---
+### **8. `AutoNestCut/ui/dialog_manager.rb`**
+
+**Action:** Ensure `show_config_dialog` and `show_diagrams_and_report_dialog` correctly handle passing the new data structures to JavaScript. The `serialize_parts_by_material` helper needs to adapt.
+
+```ruby
+# REPLACE the ENTIRE content of AutoNestCut/ui/dialog_manager.rb with this:
+require 'json'
+
+module AutoNestCut
+  class UIDialogManager
+
+    # `part_types_by_material_and_quantities` is now: material_name => array of {part_type: Part, total_quantity: int}
+    def show_config_dialog(part_types_by_material_and_quantities)
+      settings = Config.load_settings
+
+      dialog = UI::HtmlDialog.new(
+        dialog_title: "AutoNestCut Configuration",
+        preferences_key: "AutoNestCut_Config",
+        scrollable: true,
+        resizable: true,
+        width: 650,
+        height: 550
+      )
+
+      html_file = File.join(__dir__, 'html', 'config.html')
+      dialog.set_file(html_file)
+
+      dialog.add_action_callback("ready") do |action_context|
+        data = {
+          settings: settings,
+          # Serialize part_types_by_material_and_quantities for JSON transfer
+          parts_by_material: serialize_part_types_by_material(part_types_by_material_and_quantities)
+        }
+        dialog.execute_script("receiveInitialData(#{Util.safe_json(data)})")
+      end
+
+      dialog.add_action_callback("process") do |action_context, settings_json|
+        begin
+          new_settings = JSON.parse(settings_json)
+          Config.save_settings(new_settings)
+          dialog.close
+          AutoNestCut.process_nesting(part_types_by_material_and_quantities, new_settings) # Pass the original part types
+        rescue => e
+          UI.messagebox("Error processing settings: #{e.message}\n#{e.backtrace.join("\n")}")
+        end
+      end
+
+      dialog.show
+    end
+
+    def show_diagrams_and_report_dialog(boards, report_data)
+      dialog = UI::HtmlDialog.new(
+        dialog_title: "AutoNestCut Diagrams & Report",
+        preferences_key: "AutoNestCut_DiagramsReport",
+        scrollable: true,
+        resizable: true,
+        width: 1200,
+        height: 750
+      )
+
+      html_file = File.join(__dir__, 'html', 'diagrams_report.html')
+      dialog.set_file(html_file)
+
+      dialog.add_action_callback("ready") do |action_context|
+        data = {
+          diagrams: DiagramGenerator.new.prepare_diagram_data(boards), # These are the `Board#to_h` outputs
+          report: report_data
+        }
+        dialog.execute_script("receiveData(#{Util.safe_json(data)})")
+      end
+
+      dialog.add_action_callback("export_csv") do |action_context|
+        export_csv_report(report_data)
+      end
+
+      dialog.add_action_callback("trigger_print") do |action_context|
+        puts "Print command triggered from Ruby side (for logging)."
+      end
+
+      dialog.show
+    end
+
+    private
+
+    # Converts part_types_by_material_and_quantities into a JSON-serializable structure
+    # This is for the config dialog to display the list of detected parts.
+    def serialize_part_types_by_material(part_types_by_material_and_quantities)
+      result = {}
+      part_types_by_material_and_quantities.each do |material, types_and_quantities|
+        result[material] = types_and_quantities.map do |entry|
+          {
+            part_type_name: entry[:part_type].name,
+            width: entry[:part_type].width.round(2),
+            height: entry[:part_type].height.round(2),
+            thickness: entry[:part_type].thickness.round(2),
+            material: entry[:part_type].material,
+            grain_direction: entry[:part_type].grain_direction,
+            total_quantity: entry[:total_quantity]
+          }
+        end
+      end
+      result
+    end
+
+    def export_csv_report(report_data)
+      filename = UI.savepanel("Save Cut List", "", "cutlist.csv")
+      return unless filename
+
+      begin
+        ReportGenerator.new.export_csv(filename, report_data)
+        UI.messagebox("Cut list exported successfully to:\n#{filename}")
+      rescue => e
+        UI.messagebox("Error exporting CSV: #{e.message}\n#{e.backtrace.join("\n")}")
+      end
+    end
+  end
+end
+```
+
+---
+### **9. `AutoNestCut/ui/html/diagrams_report.html`**
+
+**Action:** Add a new table for "Unique Part Types" in the report section.
+
+```html
+<!-- REPLACE the ENTIRE content of AutoNestCut/ui/html/diagrams_report.html with this: -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>AutoNestCut Diagrams & Report</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>AutoNestCut Diagrams & Report</h1>
+        <button id="printButton">Print / Save as PDF</button>
+        <button id="exportCsvButton">Export CSV Report</button>
+    </div>
+
+    <div class="container">
+        <div id="diagramsContainer" class="diagrams-container">
+            <!-- Diagrams will be rendered here by JavaScript -->
+            <p>Loading diagrams...</p>
+        </div>
+        <div id="reportContainer" class="report-container">
+            <h2>Overall Summary</h2>
+            <table id="summaryTable"></table>
+
+            <h2>Unique Part Types</h2> <!-- NEW TABLE FOR PART TYPE SUMMARY -->
+            <table id="uniquePartTypesTable"></table>
+
+            <h2>Boards Summary</h2>
+            <table id="boardsTable"></table>
+
+            <h2>Parts Placed (Detailed)</h2> <!-- Renamed from Parts List -->
+            <table id="partsTable"></table>
+        </div>
+    </div>
+
+    <script src="diagrams_report.js"></script>
+</body>
+</html>
+```
+
+---
+### **10. `AutoNestCut/ui/html/style.css`**
+
+**Action:** No major functional changes are needed here, but the print media query is important to ensure a clean PDF output. Ensure this file contains the print-specific styles.
+
+```css
+/* REPLACE the ENTIRE content of AutoNestCut/ui/html/style.css with this: */
+/* Basic Reset */
+body, h1, h2, p, table, div, button {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #f4f4f4;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden; /* Manage scrolling within containers */
+}
+
+.header {
+    background-color: #333;
+    color: #fff;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 3px solid #007bff;
+}
+
+.header h1 {
+    font-size: 1.8em;
+    margin: 0;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s ease;
+    margin-left: 10px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.container {
+    display: flex;
+    flex-grow: 1;
+    overflow: hidden; /* Ensures inner containers handle their own scroll */
+}
+
+.diagrams-container {
+    flex: 2; /* Takes 2/3 of the space */
+    padding: 20px;
+    background-color: #fff;
+    border-right: 1px solid #ddd;
+    overflow-y: auto; /* Allows scrolling for many diagrams */
+    display: flex;
+    flex-wrap: wrap; /* Allows diagrams to wrap */
+    align-content: flex-start; /* Aligns wrapped content to the start */
+    gap: 20px; /* Space between diagrams */
+}
+
+.report-container {
+    flex: 1; /* Takes 1/3 of the space */
+    padding: 20px;
+    background-color: #fbfbfb;
+    overflow-y: auto; /* Allows scrolling for long reports */
+}
+
+.diagram-card {
+    border: 1px solid #ccc;
+    padding: 10px;
+    background-color: #f9f9f9;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    break-inside: avoid; /* Helps with printing */
+}
+
+.diagram-card h3 {
+    font-size: 1.1em;
+    margin-bottom: 5px;
+    color: #007bff;
+}
+
+.diagram-card p {
+    font-size: 0.85em;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.diagram-canvas {
+    border: 1px dashed #aaa;
+    display: block; /* Remove extra space below canvas */
+    background-color: #e9e9e9; /* Light background for the canvas itself */
+}
+
+/* Report Table Styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-size: 0.85em;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background-color: #eef;
+    font-weight: bold;
+    color: #444;
+}
+
+tr:nth-child(even) {
+    background-color: #f6f6f6;
+}
+
+h2 {
+    margin-top: 25px;
+    margin-bottom: 15px;
+    color: #007bff;
+    font-size: 1.3em;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+/* Print specific styles */
+@media print {
+    body {
+        height: auto;
+        overflow: visible;
+        display: block;
+    }
+    .header {
+        display: none; /* Hide header in print */
+    }
+    .container {
+        flex-direction: column; /* Stack diagrams and report vertically for print */
+        overflow: visible;
+    }
+    .diagrams-container, .report-container {
+        flex: none; /* Remove flex sizing */
+        width: 100%;
+        border: none;
+        overflow: visible;
+        padding: 0;
+        margin-bottom: 20px; /* Space between sections */
+    }
+    .diagram-card {
+        page-break-inside: avoid; /* Keep individual diagrams from breaking across pages */
+        margin-bottom: 15px;
+        box-shadow: none;
+    }
+    .diagram-card h3, .diagram-card p {
+        color: #333;
+    }
+    button {
+        display: none; /* Hide buttons in print */
+    }
+    table, th, td {
+        border-color: #bbb;
+    }
+}
+```
+
+---
+### **11. `AutoNestCut/ui/html/diagrams_report.js`**
+
+**Action:** Update the JavaScript to render the new "Unique Part Types" table and adjust diagram labels to use `instance_id`.
+
+```javascript
+/* REPLACE the ENTIRE content of AutoNestCut/ui/html/diagrams_report.js with this: */
+// Function to communicate with Ruby (SketchUp)
+function callRuby(method, args) {
+    if (typeof sketchup === 'object') {
+        sketchup.send_action_callback(method, args);
+    } else {
+        console.warn('SketchUp Ruby object not available.');
+    }
+}
+
+// Store data received from Ruby
+let g_boardsData = []; // Array of Board#to_h (contains individual placed part instances)
+let g_reportData = null; // Contains summarized report data
+
+// --- Data Reception from Ruby ---
+function receiveData(data) {
+    console.log("Received data from Ruby:", data);
+    g_boardsData = data.diagrams;
+    g_reportData = data.report;
+
+    renderDiagrams();
+    renderReport();
+}
+
+// --- Diagram Rendering Logic (using Canvas) ---
+function renderDiagrams() {
+    const container = document.getElementById('diagramsContainer');
+    container.innerHTML = ''; // Clear loading message
+
+    if (!g_boardsData || g_boardsData.length === 0) {
+        container.innerHTML = '<p>No cutting diagrams to display.</p>';
+        return;
+    }
+
+    g_boardsData.forEach((board, boardIndex) => {
+        const card = document.createElement('div');
+        card.className = 'diagram-card';
+
+        const title = document.createElement('h3');
+        title.textContent = `${board.material} Board ${boardIndex + 1}`;
+        card.appendChild(title);
+
+        const info = document.createElement('p');
+        info.innerHTML = `Size: ${board.stock_width.toFixed(1)}x${board.stock_height.toFixed(1)}mm<br>
+                          Waste: ${board.waste_percentage.toFixed(1)}% (Efficiency: ${board.efficiency_percentage.toFixed(1)}%)`;
+        card.appendChild(info);
+
+        const canvas = document.createElement('canvas');
+        canvas.className = 'diagram-canvas';
+        card.appendChild(canvas);
+
+        container.appendChild(card);
+
+        // --- Canvas Drawing ---
+        const ctx = canvas.getContext('2d');
+        const padding = 20; // Padding around the diagram within the canvas
+        const labelMargin = 30; // Margin for board label above the board
+
+        // Calculate scale factor
+        const maxCanvasDim = 600;
+        const scale = Math.min(
+            (maxCanvasDim - 2 * padding) / board.stock_width,
+            (maxCanvasDim - 2 * padding - labelMargin) / board.stock_height
+        );
+
+        canvas.width = board.stock_width * scale + 2 * padding;
+        canvas.height = board.stock_height * scale + 2 * padding + labelMargin;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous drawing
+
+        // Draw Board Outline (slightly grey background)
+        ctx.fillStyle = '#e9e9e9';
+        ctx.fillRect(padding, padding + labelMargin, board.stock_width * scale, board.stock_height * scale);
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(padding, padding + labelMargin, board.stock_width * scale, board.stock_height * scale);
+
+        // Draw Parts (these are the individual placed instances)
+        board.parts.forEach((part_instance, partIndex) => { // `board.parts` based on Board#to_h
+            const partX = padding + part_instance.x * scale;
+            const partY = padding + labelMargin + part_instance.y * scale;
+            const partWidth = part_instance.width * scale;
+            const partHeight = part_instance.height * scale;
+
+            ctx.fillStyle = getPartColor(partIndex); // Use a distinct color for each placed piece
+            ctx.fillRect(partX, partY, partWidth, partHeight);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 0.5;
+            ctx.strokeRect(partX, partY, partWidth, partHeight);
+
+            // Add part label - use part_instance.instance_id (e.g., "P1", "P2") for diagram labels
+            ctx.fillStyle = '#000';
+            ctx.font = `${Math.max(8, 12 * scale / 1.5)}px sans-serif`; // Adjust font size based on scale
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const labelContent1 = part_instance.instance_id; // Use the assigned P# ID
+            const labelContent2 = `${part_instance.width.toFixed(0)}x${part_instance.height.toFixed(0)}mm` + (part_instance.rotated ? ' (R)' : '');
+
+            // Draw label, potentially breaking into two lines
+            if (partHeight > 20 * scale) { // Only show two lines if part is reasonably tall
+                ctx.fillText(labelContent1, partX + partWidth / 2, partY + partHeight / 2 - (partHeight > 30 * scale ? 10 * scale / 1.5 : 0));
+                ctx.fillText(labelContent2, partX + partWidth / 2, partY + partHeight / 2 + (partHeight > 30 * scale ? 10 * scale / 1.5 : 0));
+            } else { // Fallback for very small parts, just show ID
+                ctx.fillText(labelContent1, partX + partWidth / 2, partY + partHeight / 2);
+            }
+        });
+    });
+}
+
+// Function to get distinct colors for parts (JS version)
+function getPartColor(partIndex) {
+    const colors = [
+        'rgba(255,0,0,0.6)', 'rgba(0,0,255,0.6)', 'rgba(0,255,0,0.6)', 'rgba(255,255,0,0.6)',
+        'rgba(255,165,0,0.6)', 'rgba(128,0,128,0.6)', 'rgba(0,255,255,0.6)', 'rgba(255,0,255,0.6)'
+    ];
+    return colors[partIndex % colors.length];
+}
+
+// --- Report Rendering Logic (using HTML Tables) ---
+function renderReport() {
+    if (!g_reportData) {
+        document.getElementById('reportContainer').innerHTML = '<p>No report data to display.</p>';
+        return;
+    }
+
+    // Overall Summary Table
+    const summaryTable = document.getElementById('summaryTable');
+    summaryTable.innerHTML = `
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Total Parts Instances</td><td>${g_reportData.summary.total_parts_instances}</td></tr>
+        <tr><td>Total Unique Part Types</td><td>${g_reportData.summary.total_unique_part_types}</td></tr>
+        <tr><td>Total Boards Used</td><td>${g_reportData.summary.total_boards}</td></tr>
+        <tr><td>Total Stock Area</td><td>${g_reportData.summary.total_stock_area.toFixed(2)} mm²</td></tr>
+        <tr><td>Total Used Area</td><td>${g_reportData.summary.total_used_area.toFixed(2)} mm²</td></tr>
+        <tr><td>Total Waste Area</td><td>${g_reportData.summary.total_waste_area.toFixed(2)} mm²</td></tr>
+        <tr><td>Overall Waste %</td><td>${g_reportData.summary.overall_waste_percentage.toFixed(2)} %</td></tr>
+        <tr><td>Overall Efficiency %</td><td>${g_reportData.summary.overall_efficiency.toFixed(2)} %</td></tr>
+    `;
+
+    // NEW: Unique Part Types Table
+    const uniquePartTypesTable = document.getElementById('uniquePartTypesTable');
+    uniquePartTypesTable.innerHTML = `
+        <tr>
+            <th>Name</th>
+            <th>W (mm)</th>
+            <th>H (mm)</th>
+            <th>Thick (mm)</th>
+            <th>Material</th>
+            <th>Grain</th>
+            <th>Total Qty</th>
+            <th>Total Area (mm²)</th>
+        </tr>
+    `;
+    g_reportData.unique_part_types.forEach(part_type => { // Use g_reportData.unique_part_types
+        uniquePartTypesTable.innerHTML += `
+            <tr>
+                <td>${part_type.name}</td>
+                <td>${part_type.width.toFixed(2)}</td>
+                <td>${part_type.height.toFixed(2)}</td>
+                <td>${part_type.thickness.toFixed(2)}</td>
+                <td>${part_type.material}</td>
+                <td>${part_type.grain_direction}</td>
+                <td>${part_type.total_quantity}</td>
+                <td>${part_type.total_area.toFixed(2)}</td>
+            </tr>
+        `;
+    });
+
+
+    // Boards Summary Table
+    const boardsTable = document.getElementById('boardsTable');
+    boardsTable.innerHTML = `
+        <tr>
+            <th>Board#</th>
+            <th>Material</th>
+            <th>Stock Size</th>
+            <th>Parts Count</th>
+            <th>Used Area (mm²)</th>
+            <th>Waste Area (mm²)</th>
+            <th>Waste %</th>
+            <th>Efficiency %</th>
+        </tr>
+    `;
+    g_reportData.boards.forEach(board => {
+        boardsTable.innerHTML += `
+            <tr>
+                <td>${board.board_number}</td>
+                <td>${board.material}</td>
+                <td>${board.stock_size}</td>
+                <td>${board.parts_count}</td>
+                <td>${board.used_area.toFixed(2)}</td>
+                <td>${board.waste_area.toFixed(2)}</td>
+                <td>${board.waste_percentage.toFixed(2)}</td>
+                <td>${board.efficiency.toFixed(2)}</td>
+            </tr>
+        `;
+    });
+
+    // Parts Placed (Detailed) Table
+    const partsTable = document.getElementById('partsTable');
+    partsTable.innerHTML = `
+        <tr>
+            <th>Unique ID</th>
+            <th>Name</th>
+            <th>W (mm)</th>
+            <th>H (mm)</th>
+            <th>Thick (mm)</th>
+            <th>Material</th>
+            <th>Area (mm²)</th>
+            <th>Board#</th>
+            <th>X Pos (mm)</th>
+            <th>Y Pos (mm)</th>
+            <th>Rotated</th>
+            <th>Grain</th>
+        </tr>
+    `;
+    g_reportData.parts_placed.forEach(part_instance => { // Use g_reportData.parts_placed
+        partsTable.innerHTML += `
+            <tr>
+                <td>${part_instance.part_unique_id}</td>
+                <td>${part_instance.name}</td>
+                <td>${part_instance.width.toFixed(2)}</td>
+                <td>${part_instance.height.toFixed(2)}</td>
+                <td>${part_instance.thickness.toFixed(2)}</td>
+                <td>${part_instance.material}</td>
+                <td>${part_instance.area.toFixed(2)}</td>
+                <td>${part_instance.board_number}</td>
+                <td>${part_instance.position_x.toFixed(2)}</td>
+                <td>${part_instance.position_y.toFixed(2)}</td>
+                <td>${part_instance.rotated}</td>
+                <td>${part_instance.grain_direction}</td>
+            </tr>
+        `;
+    });
+}
+
+// --- Event Listeners ---
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('printButton').addEventListener('click', () => {
+        callRuby('trigger_print'); // Log to Ruby console
+        window.print(); // Trigger browser's print dialog
+    });
+
+    document.getElementById('exportCsvButton').addEventListener('click', () => {
+        callRuby('export_csv'); // Call Ruby to handle CSV export
+    });
+
+    // Signal to Ruby that the HTML dialog is ready to receive data
+    callRuby('ready');
+});
+```
+
+---
+### **12. `AutoNestCut/models/board.rb` and `AutoNestCut/util.rb`**
+
+**Action:** No functional changes needed for `board.rb` or `util.rb` for this specific part/quantity feature, as they already handle dimensions and areas consistently. Just ensure `board.rb`'s `add_part` expects an individual `Part` instance.
+
+**`AutoNestCut/models/board.rb` (No major changes from previous refined version)**
+
+```ruby
+# The content of AutoNestCut/models/board.rb remains the same as the last refined version.
+# Ensure add_part expects a Part object representing an instance.
+module AutoNestCut
+  class Board
+    attr_accessor :material, :stock_width, :stock_height, :parts_on_board
+
+    def initialize(material, stock_width, stock_height)
+      @material = material
+      # Dimensions stored as raw numbers (mm)
+      @stock_width = stock_width
+      @stock_height = stock_height
+      @parts_on_board = []
+    end
+
+    def add_part(part_instance, x, y) # `part_instance` is a Part object representing one physical piece
+      # x, y assumed to be raw numbers (mm)
+      part_instance.x = x
+      part_instance.y = y
+      @parts_on_board << part_instance
+    end
+
+    def used_area
+      # Area calculations assume dimensions are in the same unit (mm)
+      @parts_on_board.sum(&:area)
+    end
+
+    def total_area
+      # Area calculations assume dimensions are in the same unit (mm)
+      @stock_width * @stock_height
+    end
+
+    def waste_area
+      total_area - used_area
+    end
+
+    def calculate_waste_percentage
+      return 0.0 if total_area == 0
+      (waste_area.to_f / total_area * 100.0).round(2)
+    end
+
+    def efficiency_percentage
+      (100.0 - calculate_waste_percentage).round(2)
+    end
+
+    # Checks if a part can fit at a specific (x, y) position on the board
+    # x, y, kerf_width, part.width, part.height assumed to be raw numbers (mm)
+    def can_fit_part?(part_instance, x, y, kerf_width = 0) # `part_instance` is a Part object
+      # Calculate part boundaries including kerf
+      part_right = x + part_instance.width + kerf_width
+      part_top = y + part_instance.height + kerf_width
+
+      # Check if part is within board boundaries
+      return false if part_right > @stock_width || part_top > @stock_height
+
+      # Check for overlaps with existing parts
+      @parts_on_board.each do |existing_part_instance|
+        # Existing part boundaries including kerf
+        existing_right = existing_part_instance.x + existing_part_instance.width + kerf_width
+        existing_top = existing_part_instance.y + existing_part_instance.height + kerf_width
+
+        if !(x >= existing_right || part_right <= existing_part_instance.x ||
+             y >= existing_top || part_top <= existing_part_instance.y)
+          return false # Overlap detected
+        end
+      end
+      true # No overlaps and within bounds
+    end
+
+    # Finds the bottom-leftmost position for a part on the board
+    def find_best_position(part_instance, kerf_width = 0) # `part_instance` is a Part object
+      step_size = 1.0 # Use 1.0mm for fine-grained search
+      
+      max_y = (@stock_height - part_instance.height - kerf_width).floor
+      (0..max_y).step(step_size) do |y|
+        max_x = (@stock_width - part_instance.width - kerf_width).floor
+        (0..max_x).step(step_size) do |x|
+          return [x, y] if can_fit_part?(part_instance, x.to_f, y.to_f, kerf_width)
+        end
+      end
+      nil
+    end
+
+    def to_h
+      {
+        material: @material,
+        stock_width: @stock_width.round(2),
+        stock_height: @stock_height.round(2),
+        parts_count: @parts_on_board.length,
+        used_area: used_area.round(2),
+        waste_area: waste_area.round(2),
+        waste_percentage: calculate_waste_percentage.round(2),
+        efficiency_percentage: efficiency_percentage.round(2),
+        parts: @parts_on_board.map(&:to_h) # Each placed part instance is converted to hash
+      }
+    end
+  end
+end
+```
+
+**`AutoNestCut/util.rb` (No changes needed)**
+
+```ruby
+# The content of AutoNestCut/util.rb remains the same as the last refined version.
+```
+
+---
+
+**Final Check:**
+*   Ensure all `require_relative` paths are correct.
+*   Make sure new HTML/CSS/JS files are created in `AutoNestCut/ui/html/`.
+
+With these comprehensive instructions, your AI model should be able to implement the ultimate solution for your AutoNestCut extension, providing a much clearer and more functional cut list report!
