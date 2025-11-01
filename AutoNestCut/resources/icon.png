@@ -1,0 +1,4 @@
+# This would be a binary PNG file in a real implementation
+# For now, creating a placeholder text file
+# In practice, you would need to create a 24x24 pixel PNG icon
+# representing cutting/nesting (e.g., rectangles arranged on a sheet)
