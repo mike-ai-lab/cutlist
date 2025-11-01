@@ -42,11 +42,17 @@
     <div id="partModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
+            <div class="modal-controls">
+                <button id="textureToggle">Material Texture</button>
+                <button id="projectionToggle">Orthographic</button>
+            </div>
             <canvas id="modalCanvas" width="500" height="400"></canvas>
             <div id="modalInfo"></div>
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="diagrams_report.js"></script>
 </body>
 </html>

@@ -308,23 +308,16 @@ function handleCanvasHover(e, canvas) {
     canvas.style.cursor = hovering ? 'pointer' : 'default';
 }
 
-let gl, program, rotationX = 0, rotationY = 0, zoom = 5, panX = 0, panY = 0;
-let isDragging = false, isPanning = false, lastMouseX, lastMouseY;
+let scene, camera, renderer, controls, cube;
+let showTexture = false, isOrthographic = false, currentPart = null;
 
 function showPartModal(part) {
     const modal = document.getElementById('partModal');
     const modalCanvas = document.getElementById('modalCanvas');
     const modalInfo = document.getElementById('modalInfo');
     
-    // Initialize WebGL
-    gl = modalCanvas.getContext('webgl');
-    if (!gl) {
-        alert('WebGL not supported');
-        return;
-    }
-    
-    initWebGL(part);
-    setupMouseControls(modalCanvas);
+    initThreeJS(part, modalCanvas);
+    setupOrbitControls();
     
     // Set modal info
     modalInfo.innerHTML = `
@@ -334,64 +327,92 @@ function showPartModal(part) {
         <p><strong>Material:</strong> ${part.material}</p>
         <p><strong>Grain Direction:</strong> ${part.grain_direction || 'Any'}</p>
         <p><strong>Rotated:</strong> ${part.rotated ? 'Yes' : 'No'}</p>
-        <p style="color: #666; font-size: 12px;">Left drag: rotate | Right drag: pan | Scroll: zoom</p>
+        <p style="color: #666; font-size: 12px;">Left drag: orbit | Middle/Shift+Left drag: pan | Scroll: zoom</p>
     `;
     
+    // Setup button controls
+    document.getElementById('textureToggle').onclick = () => {
+        showTexture = !showTexture;
+        document.getElementById('textureToggle').textContent = showTexture ? 'Blue Color' : 'Material Texture';
+    };
+    
+    document.getElementById('projectionToggle').onclick = () => {
+        isOrthographic = !isOrthographic;
+        document.getElementById('projectionToggle').textContent = isOrthographic ? 'Perspective' : 'Orthographic';
+        
+        if (isOrthographic) {
+            const distance = camera.position.distanceTo(controls.target);
+            camera = new THREE.OrthographicCamera(-distance, distance, distance, -distance, 0.1, 1000);
+        } else {
+            camera = new THREE.PerspectiveCamera(75, renderer.domElement.width / renderer.domElement.height, 0.1, 1000);
+        }
+        camera.position.set(5, 5, 5);
+        controls.object = camera;
+    };
+    
+    currentPart = part;
     modal.style.display = 'block';
-    animate(part);
+    animate();
 }
 
-function initWebGL(part) {
-    const vertexShaderSource = `
-        attribute vec3 position;
-        uniform mat4 modelViewMatrix;
-        uniform mat4 projectionMatrix;
-        void main() {
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+function createMaterialTexture(material) {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    
+    if (material.toLowerCase().includes('wood') || material.toLowerCase().includes('chestnut')) {
+        // Wood grain pattern
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(0, 0, 256, 256);
+        ctx.fillStyle = '#A0522D';
+        for (let i = 0; i < 256; i += 4) {
+            ctx.fillRect(0, i, 256, 2);
         }
-    `;
-    
-    const fragmentShaderSource = `
-        precision mediump float;
-        uniform vec3 color;
-        void main() {
-            gl_FragColor = vec4(color, 1.0);
+    } else {
+        // Generic material pattern
+        ctx.fillStyle = '#D3D3D3';
+        ctx.fillRect(0, 0, 256, 256);
+        ctx.fillStyle = '#A9A9A9';
+        for (let i = 0; i < 256; i += 8) {
+            ctx.fillRect(i, 0, 4, 256);
+            ctx.fillRect(0, i, 256, 4);
         }
-    `;
+    }
     
-    const vertexShader = createShader(gl.VERTEX_SHADER, vertexShaderSource);
-    const fragmentShader = createShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
-    program = createProgram(vertexShader, fragmentShader);
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+}
+
+function initThreeJS(part, canvas) {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf0f0f0);
     
-    // Create box geometry with actual dimensions
-    const w = part.width / 100; // Scale down for display
-    const h = part.height / 100;
+    camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
+    camera.position.set(5, 5, 5);
+    
+    renderer = new THREE.WebGLRenderer({ canvas: canvas });
+    renderer.setSize(canvas.width, canvas.height);
+    
+    // Create box with part dimensions
+    const w = part.width / 100;
+    const h = part.height / 100; 
     const d = part.thickness / 100;
     
-    const vertices = new Float32Array([
-        -w/2, -h/2, -d/2,  w/2, -h/2, -d/2,  w/2,  h/2, -d/2, -w/2,  h/2, -d/2, // Front
-        -w/2, -h/2,  d/2,  w/2, -h/2,  d/2,  w/2,  h/2,  d/2, -w/2,  h/2,  d/2, // Back
-    ]);
+    const geometry = new THREE.BoxGeometry(w, h, d);
+    const material = new THREE.MeshBasicMaterial({ color: 0x74b9ff });
+    cube = new THREE.Mesh(geometry, material);
     
-    const indices = new Uint16Array([
-        0,1,2, 0,2,3, 4,7,6, 4,6,5, 0,4,5, 0,5,1, 2,6,7, 2,7,3, 0,3,7, 0,7,4, 1,5,6, 1,6,2
-    ]);
+    // Add subtle edges
+    const edges = new THREE.EdgesGeometry(geometry);
+    const edgeMaterial = new THREE.LineBasicMaterial({ color: 0x333333, linewidth: 1 });
+    const wireframe = new THREE.LineSegments(edges, edgeMaterial);
     
-    const vertexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-    
-    const indexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
-    
-    gl.useProgram(program);
-    const positionLocation = gl.getAttribLocation(program, 'position');
-    gl.enableVertexAttribArray(positionLocation);
-    gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
-    
-    gl.enable(gl.DEPTH_TEST);
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    scene.add(cube);
+    scene.add(wireframe);
 }
 
 function createShader(type, source) {
@@ -409,90 +430,29 @@ function createProgram(vertexShader, fragmentShader) {
     return program;
 }
 
-function setupMouseControls(canvas) {
-    canvas.addEventListener('mousedown', (e) => {
-        if (e.button === 0) { // Left click - rotate
-            isDragging = true;
-        } else if (e.button === 2) { // Right click - pan
-            isPanning = true;
-            e.preventDefault();
-        }
-        lastMouseX = e.clientX;
-        lastMouseY = e.clientY;
-    });
-    
-    canvas.addEventListener('mousemove', (e) => {
-        const deltaX = e.clientX - lastMouseX;
-        const deltaY = e.clientY - lastMouseY;
-        
-        if (isDragging) {
-            rotationY += deltaX * 0.01;
-            rotationX += deltaY * 0.01;
-        } else if (isPanning) {
-            panX += deltaX * 0.01;
-            panY -= deltaY * 0.01;
-        }
-        
-        lastMouseX = e.clientX;
-        lastMouseY = e.clientY;
-    });
-    
-    canvas.addEventListener('mouseup', () => {
-        isDragging = false;
-        isPanning = false;
-    });
-    
-    canvas.addEventListener('mouseleave', () => {
-        isDragging = false;
-        isPanning = false;
-    });
-    
-    canvas.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        zoom += e.deltaY * 0.01;
-        zoom = Math.max(1, Math.min(20, zoom));
-    });
-    
-    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+function setupOrbitControls() {
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.25;
+    controls.enableZoom = true;
+    controls.enablePan = true;
+    controls.enableRotate = true;
+    controls.minDistance = 1;
+    controls.maxDistance = 50;
 }
 
-function animate(part) {
-    if (!gl || !program) return;
+function animate() {
+    if (!renderer || !scene || !camera) return;
     
-    gl.clearColor(0.95, 0.95, 0.95, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    
-    // Create matrices
-    const modelViewMatrix = mat4Create();
-    mat4Translate(modelViewMatrix, [panX, panY, -zoom]);
-    mat4RotateX(modelViewMatrix, rotationX);
-    mat4RotateY(modelViewMatrix, rotationY);
-    
-    const projectionMatrix = mat4Perspective(45 * Math.PI / 180, gl.canvas.width / gl.canvas.height, 0.1, 100.0);
-    
-    // Set uniforms
-    gl.uniformMatrix4fv(gl.getUniformLocation(program, 'modelViewMatrix'), false, modelViewMatrix);
-    gl.uniformMatrix4fv(gl.getUniformLocation(program, 'projectionMatrix'), false, projectionMatrix);
-    gl.uniform3f(gl.getUniformLocation(program, 'color'), 116/255, 185/255, 1.0);
-    
-    gl.drawElements(gl.TRIANGLES, 36, gl.UNSIGNED_SHORT, 0);
+    controls.update();
+    renderer.render(scene, camera);
     
     if (document.getElementById('partModal').style.display === 'block') {
-        requestAnimationFrame(() => animate(part));
+        requestAnimationFrame(animate);
     }
 }
 
-// Simple matrix functions
-function mat4Create() { return new Float32Array(16).fill(0); }
-function mat4Identity(out) { out[0]=out[5]=out[10]=out[15]=1; return out; }
-function mat4Perspective(fovy, aspect, near, far) {
-    const out = mat4Create(); const f = 1.0 / Math.tan(fovy / 2);
-    out[0] = f / aspect; out[5] = f; out[10] = (far + near) / (near - far); out[11] = -1;
-    out[14] = (2 * far * near) / (near - far); return out;
-}
-function mat4Translate(out, v) { mat4Identity(out); out[12] = v[0]; out[13] = v[1]; out[14] = v[2]; }
-function mat4RotateX(out, rad) { const s = Math.sin(rad), c = Math.cos(rad); const a01 = out[1], a02 = out[2]; out[1] = a01 * c + out[9] * s; out[2] = a02 * c + out[10] * s; out[9] = out[9] * c - a01 * s; out[10] = out[10] * c - a02 * s; }
-function mat4RotateY(out, rad) { const s = Math.sin(rad), c = Math.cos(rad); const a00 = out[0], a02 = out[2]; out[0] = a00 * c - out[8] * s; out[2] = a02 * c - out[10] * s; out[8] = out[8] * c + a00 * s; out[10] = out[10] * c + a02 * s; }
+
 
 // Resizer functionality
 function initResizer() {

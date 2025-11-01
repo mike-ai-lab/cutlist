@@ -294,8 +294,10 @@ h2 {
     border: 1px solid #888;
     width: 500px;
     max-width: 90%;
+    max-height: 80vh;
     border-radius: 8px;
     text-align: center;
+    overflow-y: auto;
 }
 
 .close {
@@ -330,4 +332,24 @@ h2 {
 #modalInfo p {
     margin: 5px 0;
     color: #666;
+}
+
+.modal-controls {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.modal-controls button {
+    margin: 0 5px;
+    padding: 8px 16px;
+    background: #007acc;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.modal-controls button:hover {
+    background: #005a9e;
 }
