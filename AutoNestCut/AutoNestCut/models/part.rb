@@ -1,64 +1,76 @@
 module AutoNestCut
   class Part
-    attr_accessor :name, :width, :height, :thickness, :material, :original_instance, :grain_direction, :x, :y, :rotated
-    
-    def initialize(component_instance)
-      @original_instance = component_instance
-      @name = component_instance.definition.name
-      
-      # Calculate dimensions from bounding box
-      bounds = component_instance.definition.bounds
-      dimensions = [bounds.width.to_mm, bounds.height.to_mm, bounds.depth.to_mm].sort
-      
-      @thickness = dimensions[0]
-      @width = dimensions[1] 
-      @height = dimensions[2]
-      
-      # Get material and grain direction
-      @material = Config.get_material_from_component(component_instance)
-      @grain_direction = Config.get_grain_direction(component_instance)
-      
-      # Position and rotation state
-      @x = 0
-      @y = 0
+    attr_accessor :name, :width, :height, :thickness, :material, :grain_direction
+    attr_reader :original_definition
+    attr_accessor :x, :y, :rotated, :instance_id
+
+    def initialize(component_definition, selected_entities = nil)
+      @original_definition = component_definition
+      @name = component_definition.name
+
+      dimensions_mm = Util.get_dimensions(component_definition.bounds).sort
+      @thickness = dimensions_mm[0]
+      @width = dimensions_mm[1]
+      @height = dimensions_mm[2]
+
+      @material = Config.get_material_from_component_definition(component_definition, selected_entities)
+      @grain_direction = Config.get_grain_direction_from_definition(component_definition)
+
+      @x = 0.0
+      @y = 0.0
       @rotated = false
+      @instance_id = nil
     end
-    
+
+    def create_placed_instance
+      placed_part = self.dup
+      placed_part.instance_id = nil
+      placed_part.x = 0.0
+      placed_part.y = 0.0
+      placed_part.rotated = false
+      placed_part
+    end
+
+    def area
+      @width * @height
+    end
+
     def rotate!
-      return false if @grain_direction == 'fixed'
-      
+      return false if @grain_direction && ['fixed', 'vertical', 'horizontal'].include?(@grain_direction.downcase)
       @width, @height = @height, @width
       @rotated = !@rotated
       true
     end
-    
-    def area
-      @width * @height
-    end
-    
+
     def can_rotate?
-      @grain_direction != 'fixed'
+      return false if @grain_direction && ['fixed', 'vertical', 'horizontal'].include?(@grain_direction.downcase)
+      true
     end
-    
+
     def fits_in?(board_width, board_height, kerf_width = 0)
-      w = @width + kerf_width
-      h = @height + kerf_width
-      (w <= board_width && h <= board_height) || 
-      (can_rotate? && h <= board_width && w <= board_height)
+      w_with_kerf = @width + kerf_width
+      h_with_kerf = @height + kerf_width
+
+      return true if w_with_kerf <= board_width && h_with_kerf <= board_height
+      if can_rotate?
+        return true if h_with_kerf <= board_width && w_with_kerf <= board_height
+      end
+      false
     end
-    
+
     def to_h
       {
         name: @name,
-        width: @width,
-        height: @height,
-        thickness: @thickness,
+        width: @width.round(2),
+        height: @height.round(2),
+        thickness: @thickness.round(2),
         material: @material,
         grain_direction: @grain_direction,
-        area: area,
-        x: @x,
-        y: @y,
-        rotated: @rotated
+        area: area.round(2),
+        x: @x.round(2),
+        y: @y.round(2),
+        rotated: @rotated,
+        instance_id: @instance_id
       }
     end
   end

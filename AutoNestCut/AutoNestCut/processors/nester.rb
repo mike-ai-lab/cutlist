@@ -1,82 +1,96 @@
 module AutoNestCut
   class Nester
-    
-    def optimize_boards(parts_by_material, settings)
+
+    def optimize_boards(part_types_by_material_and_quantities, settings)
       boards = []
-      stock_materials = settings['stock_materials']
-      kerf_width = settings['kerf_width'] || 3.0
+      stock_materials_config = settings['stock_materials']
+      kerf_width = settings['kerf_width'].to_f || 3.0
       allow_rotation = settings['allow_rotation'] || true
-      
-      parts_by_material.each do |material, parts|
-        stock_dims = stock_materials[material]
-        next unless stock_dims
-        
-        stock_width, stock_height = stock_dims
-        material_boards = nest_parts_for_material(parts, material, stock_width, stock_height, kerf_width, allow_rotation)
-        boards.concat(material_boards)
-      end
-      
-      boards
-    end
-    
-    private
-    
-    def nest_parts_for_material(parts, material, stock_width, stock_height, kerf_width, allow_rotation)
-      boards = []
-      remaining_parts = parts.dup
-      
-      # Sort parts by area (largest first) for better packing
-      remaining_parts.sort_by! { |part| -part.area }
-      
-      while !remaining_parts.empty?
-        board = Board.new(material, stock_width, stock_height)
-        parts_placed = []
-        
-        remaining_parts.each do |part|
-          if try_place_part_on_board(part, board, kerf_width, allow_rotation)
-            parts_placed << part
+
+      part_types_by_material_and_quantities.each do |material, types_and_quantities_for_material|
+        stock_dims = stock_materials_config[material]
+        if stock_dims.nil? || stock_dims.length != 2
+          # Auto-assign default sheet size for detected materials
+          stock_width, stock_height = 2440.0, 1220.0
+          puts "Using default sheet size for material: #{material}"
+          # Add to settings for config dialog
+          stock_materials_config[material] = [stock_width, stock_height]
+        else
+          stock_width, stock_height = stock_dims[0].to_f, stock_dims[1].to_f
+        end
+
+        all_individual_parts_to_place = []
+        types_and_quantities_for_material.each do |entry|
+          part_type = entry[:part_type]
+          total_quantity = entry[:total_quantity]
+          total_quantity.times do
+            individual_part_instance = part_type.create_placed_instance
+            all_individual_parts_to_place << individual_part_instance
           end
         end
-        
-        puts "Board #{boards.length + 1}: Placed #{parts_placed.length} parts"
-        
-        # Remove placed parts from remaining
-        remaining_parts -= parts_placed
-        
-        # Only add board if we placed at least one part
-        boards << board if !parts_placed.empty?
-        
-        # Safety check to prevent infinite loop
-        if parts_placed.empty? && !remaining_parts.empty?
-          puts "Warning: Could not place remaining #{remaining_parts.length} parts"
+
+        material_boards = nest_individual_parts(all_individual_parts_to_place, material, stock_width, stock_height, kerf_width, allow_rotation)
+        boards.concat(material_boards)
+      end
+      boards
+    end
+
+    private
+
+    def nest_individual_parts(individual_parts_to_place, material, stock_width, stock_height, kerf_width, allow_rotation)
+      boards = []
+      remaining_parts = individual_parts_to_place.dup
+
+      remaining_parts.sort_by! { |part_instance| -part_instance.area }
+
+      while !remaining_parts.empty?
+        board = Board.new(material, stock_width, stock_height)
+        parts_successfully_placed_on_this_board = []
+        parts_that_could_not_fit_yet = []
+
+        remaining_parts.each do |part_instance|
+          if try_place_part_on_board(part_instance, board, kerf_width, allow_rotation)
+            parts_successfully_placed_on_this_board << part_instance
+          else
+            parts_that_could_not_fit_yet << part_instance
+          end
+        end
+        remaining_parts = parts_that_could_not_fit_yet
+
+        if !parts_successfully_placed_on_this_board.empty?
+          boards << board
+        else
+          UI.messagebox("Warning: Could not place #{remaining_parts.length} parts of material '#{material}' on a new board. They might be too large or the nesting algorithm failed.") if !remaining_parts.empty?
           break
         end
       end
-      
       boards
     end
-    
-    def try_place_part_on_board(part, board, kerf_width, allow_rotation)
-      # Try original orientation first
-      position = board.find_best_position(part, kerf_width)
+
+    def try_place_part_on_board(part_instance, board, kerf_width, allow_rotation)
+      original_width = part_instance.width
+      original_height = part_instance.height
+      original_rotated_state = part_instance.rotated
+
+      position = board.find_best_position(part_instance, kerf_width)
       if position
-        board.add_part(part, position[0], position[1])
+        board.add_part(part_instance, position[0], position[1])
         return true
       end
-      
-      # Try rotated orientation if allowed
-      if allow_rotation && part.can_rotate?
-        part.rotate!
-        position = board.find_best_position(part, kerf_width)
+
+      if allow_rotation && part_instance.can_rotate?
+        part_instance.rotate!
+        position = board.find_best_position(part_instance, kerf_width)
         if position
-          board.add_part(part, position[0], position[1])
+          board.add_part(part_instance, position[0], position[1])
           return true
         else
-          # Rotate back if couldn't place
-          part.rotate!
+          part_instance.rotate!
+          part_instance.width = original_width
+          part_instance.height = original_height
+          part_instance.rotated = original_rotated_state
         end
       end
-      
       false
     end
   end

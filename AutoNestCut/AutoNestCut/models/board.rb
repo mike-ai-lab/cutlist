@@ -79,7 +79,7 @@ module AutoNestCut
         waste_area: waste_area,
         waste_percentage: calculate_waste_percentage,
         efficiency_percentage: efficiency_percentage,
-        parts_on_board: @parts_on_board.map(&:to_h)
+        parts: @parts_on_board.map(&:to_h)
       }
     end
   end
