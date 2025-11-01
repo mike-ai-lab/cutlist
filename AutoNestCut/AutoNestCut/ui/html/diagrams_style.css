@@ -1,0 +1,236 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.header {
+    background-color: #333;
+    color: #fff;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header h1 {
+    font-size: 1.8em;
+    margin: 0;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.container {
+    display: flex;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.diagrams-container {
+    flex: 2;
+    padding: 20px;
+    background-color: #fff;
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 20px;
+}
+
+.report-container {
+    flex: 1;
+    padding: 20px;
+    background-color: #fbfbfb;
+    overflow-y: auto;
+}
+
+.diagram-card {
+    border: 1px solid #ccc;
+    padding: 10px;
+    background-color: #f9f9f9;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+
+.diagram-card h3 {
+    font-size: 1.1em;
+    margin-bottom: 5px;
+    color: #007bff;
+}
+
+.diagram-card p {
+    font-size: 0.85em;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.diagram-canvas {
+    border: 1px dashed #aaa;
+    display: block;
+    background-color: #fff;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-size: 0.85em;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background-color: #eef;
+    font-weight: bold;
+}
+
+h2 {
+    margin-top: 25px;
+    margin-bottom: 15px;
+    color: #007bff;
+    font-size: 1.3em;
+}
+
+@media print {
+    * {
+        -webkit-print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+    
+    body {
+        font-family: Arial, sans-serif;
+        font-size: 12pt;
+        line-height: 1.4;
+        margin: 0;
+        padding: 20pt;
+        background: white;
+        color: black;
+        display: block;
+        height: auto;
+    }
+    
+    .header {
+        display: block;
+        background: none;
+        color: black;
+        border-bottom: 2pt solid black;
+        margin-bottom: 20pt;
+        padding: 10pt 0;
+    }
+    
+    .header h1 {
+        font-size: 18pt;
+        font-weight: bold;
+        margin: 0;
+    }
+    
+    button {
+        display: none;
+    }
+    
+    .container {
+        display: block;
+        width: 100%;
+        flex: none;
+        overflow: visible;
+    }
+    
+    .diagrams-container, .report-container {
+        display: block;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        border: none;
+        overflow: visible;
+        flex: none;
+    }
+    
+    .report-container {
+        page-break-before: always;
+    }
+    
+    .diagram-card {
+        page-break-inside: avoid;
+        margin-bottom: 15pt;
+        border: 1pt solid black;
+        padding: 10pt;
+        background: white;
+        box-shadow: none;
+        border-radius: 0;
+    }
+    
+    .diagram-card h3 {
+        font-size: 14pt;
+        font-weight: bold;
+        margin: 0 0 5pt 0;
+        color: black;
+    }
+    
+    .diagram-card p {
+        font-size: 10pt;
+        margin: 0 0 10pt 0;
+        color: black;
+    }
+    
+    .diagram-canvas {
+        max-width: 100%;
+        height: auto;
+        border: 1pt solid black;
+        background: white;
+    }
+    
+    h2 {
+        font-size: 16pt;
+        font-weight: bold;
+        margin: 20pt 0 10pt 0;
+        color: black;
+        border-bottom: 1pt solid black;
+        padding-bottom: 5pt;
+        page-break-after: avoid;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 15pt;
+        font-size: 10pt;
+        page-break-inside: auto;
+    }
+    
+    th, td {
+        border: 1pt solid black;
+        padding: 4pt 6pt;
+        text-align: left;
+        vertical-align: top;
+    }
+    
+    th {
+        background: #f0f0f0;
+        font-weight: bold;
+    }
+    
+    tr {
+        page-break-inside: avoid;
+    }
+}

@@ -58,7 +58,9 @@ module AutoNestCut
     end
     
     def find_best_position(part, kerf_width = 0)
-      # Try to place part at bottom-left first, then scan for best fit
+      return nil if part.width + kerf_width > @stock_width || part.height + kerf_width > @stock_height
+      
+      # Simple bottom-left placement
       (0..(@stock_height - part.height - kerf_width)).step(10) do |y|
         (0..(@stock_width - part.width - kerf_width)).step(10) do |x|
           return [x, y] if can_fit_part?(part, x, y, kerf_width)
@@ -77,7 +79,7 @@ module AutoNestCut
         waste_area: waste_area,
         waste_percentage: calculate_waste_percentage,
         efficiency_percentage: efficiency_percentage,
-        parts: @parts_on_board.map(&:to_h)
+        parts_on_board: @parts_on_board.map(&:to_h)
       }
     end
   end

@@ -41,20 +41,19 @@ module AutoNestCut
   
   def self.process_nesting(parts_by_material, settings)
     begin
-      # Perform nesting optimization
       nester = Nester.new
       boards = nester.optimize_boards(parts_by_material, settings)
       
-      # Generate visual diagrams
-      diagram_generator = DiagramGenerator.new
-      diagram_generator.draw_diagrams(boards)
+      if boards.empty?
+        UI.messagebox("No boards could be generated.")
+        return
+      end
       
-      # Generate and show report
       report_generator = ReportGenerator.new
       report_data = report_generator.generate_report_data(boards)
       
       dialog_manager = UIDialogManager.new
-      dialog_manager.show_report_dialog(report_data, boards)
+      dialog_manager.show_diagrams_and_report_dialog(boards, report_data)
       
     rescue => e
       UI.messagebox("Error during nesting: #{e.message}")

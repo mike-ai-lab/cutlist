@@ -65,57 +65,52 @@ module AutoNestCut
       require 'csv'
       
       CSV.open(filename, 'w') do |csv|
-        # Parts list
+        # Project header
+        csv << ["AutoNestCut - Cutting List Report"]
+        csv << ["Generated: #{Time.now.strftime('%Y-%m-%d %H:%M')}"]
+        csv << []
+        
+        # Overall summary first
+        summary = report_data[:summary]
+        csv << ["PROJECT SUMMARY"]
+        csv << ["Total Parts:", summary[:total_parts]]
+        csv << ["Total Boards Required:", summary[:total_boards]]
+        csv << ["Material Efficiency:", "#{summary[:overall_efficiency]}%"]
+        csv << ["Material Waste:", "#{summary[:overall_waste_percentage]}%"]
+        csv << []
+        
+        # Parts list - clean and readable
         csv << ["PARTS LIST"]
-        csv << ["Part#", "Name", "Width(mm)", "Height(mm)", "Thickness(mm)", "Material", "Area(mm²)", "Board#", "X Position", "Y Position", "Rotated", "Grain Direction"]
+        csv << ["Part", "Component Name", "Width (mm)", "Height (mm)", "Thickness (mm)", "Material", "Board #", "Rotated"]
         
         report_data[:parts].each do |part|
           csv << [
             part[:part_number],
             part[:name],
-            part[:width],
-            part[:height], 
-            part[:thickness],
+            part[:width].round(1),
+            part[:height].round(1),
+            part[:thickness].round(1),
             part[:material],
-            part[:area],
             part[:board_number],
-            part[:position_x],
-            part[:position_y],
-            part[:rotated],
-            part[:grain_direction]
+            part[:rotated]
           ]
         end
         
         csv << []
         
-        # Boards summary
-        csv << ["BOARDS SUMMARY"]
-        csv << ["Board#", "Material", "Stock Size", "Parts Count", "Used Area(mm²)", "Waste Area(mm²)", "Waste %", "Efficiency %"]
+        # Boards summary - clean format
+        csv << ["MATERIAL REQUIREMENTS"]
+        csv << ["Board", "Material Type", "Standard Size", "Parts on Board", "Efficiency"]
         
         report_data[:boards].each do |board|
           csv << [
-            board[:board_number],
+            "Board #{board[:board_number]}",
             board[:material],
             board[:stock_size],
             board[:parts_count],
-            board[:used_area],
-            board[:waste_area],
-            board[:waste_percentage],
-            board[:efficiency]
+            "#{board[:efficiency].round(1)}%"
           ]
         end
-        
-        csv << []
-        
-        # Overall summary
-        summary = report_data[:summary]
-        csv << ["OVERALL SUMMARY"]
-        csv << ["Total Parts", summary[:total_parts]]
-        csv << ["Total Boards", summary[:total_boards]]
-        csv << ["Total Area (mm²)", summary[:total_area]]
-        csv << ["Total Waste (mm²)", summary[:total_waste]]
-        csv << ["Overall Waste %", summary[:overall_waste_percentage]]
-        csv << ["Overall Efficiency %", summary[:overall_efficiency]]
       end
     end
   end

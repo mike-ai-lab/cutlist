@@ -38,6 +38,8 @@ module AutoNestCut
           end
         end
         
+        puts "Board #{boards.length + 1}: Placed #{parts_placed.length} parts"
+        
         # Remove placed parts from remaining
         remaining_parts -= parts_placed
         
@@ -45,7 +47,10 @@ module AutoNestCut
         boards << board if !parts_placed.empty?
         
         # Safety check to prevent infinite loop
-        break if parts_placed.empty? && !remaining_parts.empty?
+        if parts_placed.empty? && !remaining_parts.empty?
+          puts "Warning: Could not place remaining #{remaining_parts.length} parts"
+          break
+        end
       end
       
       boards

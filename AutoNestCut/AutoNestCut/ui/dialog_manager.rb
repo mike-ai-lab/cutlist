@@ -40,25 +40,27 @@ module AutoNestCut
       dialog.show
     end
     
-    def show_report_dialog(report_data, boards)
+    def show_diagrams_and_report_dialog(boards, report_data)
       dialog = UI::HtmlDialog.new(
-        dialog_title: "AutoNestCut Report",
-        preferences_key: "AutoNestCut_Report", 
+        dialog_title: "AutoNestCut Diagrams & Report",
+        preferences_key: "AutoNestCut_DiagramsReport",
         scrollable: true,
         resizable: true,
-        width: 800,
-        height: 600
+        width: 1200,
+        height: 750
       )
       
-      html_file = File.join(__dir__, 'html', 'report.html')
+      html_file = File.join(__dir__, 'html', 'diagrams_report.html')
       dialog.set_file(html_file)
       
       dialog.add_action_callback("ready") do |action_context|
         data = {
+          diagrams: boards.map(&:to_h),
           report: report_data,
           boards: boards.map(&:to_h)
         }
-        dialog.execute_script("receiveReportData(#{data.to_json})")
+        puts "Sending data: #{data.inspect}"
+        dialog.execute_script("receiveData(#{data.to_json})")
       end
       
       dialog.add_action_callback("export_csv") do |action_context|
@@ -79,14 +81,28 @@ module AutoNestCut
     end
     
     def export_csv_report(report_data)
-      filename = UI.savepanel("Save Cut List", "", "cutlist.csv")
-      return unless filename
+      model_name = Sketchup.active_model.title.empty? ? "Untitled" : Sketchup.active_model.title.gsub(/[^\w]/, '_')
       
-      begin
-        ReportGenerator.new.export_csv(filename, report_data)
-        UI.messagebox("Cut list exported to #{filename}")
-      rescue => e
-        UI.messagebox("Error exporting CSV: #{e.message}")
+      # Auto-generate filename with incrementing number
+      base_name = "Cutting_List_#{model_name}"
+      counter = 1
+      
+      loop do
+        filename = "#{base_name}_#{counter}.csv"
+        full_path = File.join(ENV['USERPROFILE'] || ENV['HOME'], 'Desktop', filename)
+        
+        unless File.exist?(full_path)
+          begin
+            ReportGenerator.new.export_csv(full_path, report_data)
+            UI.messagebox("Cut list exported to Desktop: #{filename}")
+            return
+          rescue => e
+            UI.messagebox("Error exporting CSV: #{e.message}")
+            return
+          end
+        end
+        
+        counter += 1
       end
     end
   end
