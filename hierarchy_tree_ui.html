@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hierarchy Tree Navigation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+            padding: 40px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: left;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .tree {
+            position: relative;
+        }
+
+        .tree-node {
+            position: relative;
+            margin-left: 0;
+        }
+
+        .tree-item {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .node-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.3s ease;
+            display: inline-block;
+            min-width: 140px;
+        }
+
+        .node-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        /* Level 1 - Blue buttons */
+        .level-1 .node-button {
+            background: #00A5E3;
+            color: white;
+        }
+
+        /* Level 2 - Gray boxes */
+        .level-2 .node-button {
+            background: #B8BABC;
+            color: #333;
+        }
+
+        /* Level 3+ - White boxes with border */
+        .level-3 .node-button,
+        .level-4 .node-button,
+        .level-5 .node-button,
+        .level-6 .node-button,
+        .level-7 .node-button {
+            background: white;
+            color: #333;
+            border: 2px solid #00A5E3;
+        }
+
+        .children {
+            margin-left: 40px;
+            margin-top: 15px;
+            position: relative;
+            display: none;
+        }
+
+        .children.expanded {
+            display: block;
+        }
+
+        /* Vertical line */
+        .children::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 0;
+            bottom: 15px;
+            width: 2px;
+            background: #ccc;
+        }
+
+        /* Horizontal lines */
+        .tree-item::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 20px;
+            width: 20px;
+            height: 2px;
+            background: #ccc;
+        }
+
+        /* Remove line for first level */
+        .tree > .tree-node > .tree-item::before {
+            display: none;
+        }
+
+        .tree > .tree-node > .children::before {
+            display: none;
+        }
+
+        /* Toggle indicator */
+        .node-button::after {
+            content: '';
+            display: inline-block;
+            margin-left: 8px;
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid currentColor;
+            transition: transform 0.3s ease;
+            vertical-align: middle;
+        }
+
+        .node-button.expanded::after {
+            transform: rotate(180deg);
+        }
+
+        .node-button.no-children::after {
+            display: none;
+        }
+
+        /* Remove bottom border from last vertical line */
+        .tree-item:last-child::before {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SketchUp Hierarchy Tree</h1>
+        <div class="tree" id="hierarchyTree"></div>
+    </div>
+
+    <script>
+        // Sample hierarchy data structure
+        const hierarchyData = {
+            name: "Group",
+            children: [
+                {
+                    name: "Group",
+                    children: [
+                        { name: "Component: Lower board`1" },
+                        { name: "Component: Shelf 2`1" },
+                        { name: "Component: Shelf 1`1" }
+                    ]
+                },
+                {
+                    name: "Group",
+                    children: [
+                        { name: "Component: Drawer right side board" },
+                        { name: "Component: Drawer bottom board" },
+                        { name: "Component: Drawer front board" },
+                        {
+                            name: "Component: Drawer left side board",
+                            children: [
+                                {
+                                    name: "Group",
+                                    children: [
+                                        {
+                                            name: "Component: Component#6",
+                                            children: [
+                                                {
+                                                    name: "Group",
+                                                    children: [
+                                                        {
+                                                            name: "Group",
+                                                            children: [
+                                                                { name: "Group" }
+                                                            ]
+                                                        },
+                                                        { name: "Group" },
+                                                        { name: "Group" }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        { name: "Group" }
+                                    ]
+                                }
+                            ]
+                        },
+                        { name: "Component: Drawer back board" },
+                        { name: "Component: drawer facade" }
+                    ]
+                },
+                {
+                    name: "Group",
+                    children: [
+                        { name: "Component: drawer facade 2" },
+                        { name: "Component: Drawer bottom board2" },
+                        { name: "Component: Drawer front board2" },
+                        {
+                            name: "Group",
+                            children: [
+                                {
+                                    name: "Group",
+                                    children: [
+                                        {
+                                            name: "Group",
+                                            children: [
+                                                { name: "Group" }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        { name: "Component: Drawer back board2" },
+                        { name: "Component: Drawer left side board2" },
+                        { name: "Component: Drawer right side board2" }
+                    ]
+                },
+                { name: "Component: Left side2" },
+                {
+                    name: "Group",
+                    children: [
+                        {
+                            name: "Component: Facadea",
+                            children: [
+                                { name: "Component: Cylinder" }
+                            ]
+                        },
+                        {
+                            name: "Component: Facadeaa",
+                            children: [
+                                { name: "Component: Cylinder" }
+                            ]
+                        },
+                        { name: "Component: Plinth``1" }
+                    ]
+                },
+                { name: "Component: Cylinder" },
+                { name: "Component: Left side2" },
+                { name: "Component: Cylinder" }
+            ]
+        };
+
+        function createTreeNode(node, level = 1) {
+            const hasChildren = node.children && node.children.length > 0;
+            
+            const treeNode = document.createElement('div');
+            treeNode.className = 'tree-node';
+            
+            const treeItem = document.createElement('div');
+            treeItem.className = `tree-item level-${level}`;
+            
+            const button = document.createElement('button');
+            button.className = `node-button ${hasChildren ? '' : 'no-children'}`;
+            button.textContent = node.name;
+            
+            treeItem.appendChild(button);
+            treeNode.appendChild(treeItem);
+            
+            if (hasChildren) {
+                const childrenContainer = document.createElement('div');
+                childrenContainer.className = 'children';
+                
+                node.children.forEach(child => {
+                    childrenContainer.appendChild(createTreeNode(child, level + 1));
+                });
+                
+                treeNode.appendChild(childrenContainer);
+                
+                button.addEventListener('click', () => {
+                    button.classList.toggle('expanded');
+                    childrenContainer.classList.toggle('expanded');
+                });
+            }
+            
+            return treeNode;
+        }
+
+        // Initialize tree
+        const treeContainer = document.getElementById('hierarchyTree');
+        treeContainer.appendChild(createTreeNode(hierarchyData));
+    </script>
+</body>
+</html>

@@ -36,6 +36,16 @@
             <table id="boardsTable"></table>
 
             <h2>Parts Placed (Detailed)</h2>
+            <div class="tree-controls">
+                <button type="button" id="treeToggle" onclick="toggleTreeView()">Show Tree Structure</button>
+                <div class="tree-search" id="treeSearchContainer" style="display: none;">
+                    <input type="text" id="treeSearch" placeholder="Search components..." oninput="filterTree()">
+                    <button type="button" onclick="clearTreeSearch()">Clear</button>
+                    <button type="button" onclick="expandAll()">Expand All</button>
+                    <button type="button" onclick="collapseAll()">Collapse All</button>
+                </div>
+            </div>
+            <div id="treeStructure" class="tree-structure" style="display: none;"></div>
             <table id="partsTable"></table>
         </div>
     </div>

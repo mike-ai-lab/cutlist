@@ -17,9 +17,22 @@ body {
     align-items: center;
 }
 
+.header-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
 .header h1 {
     font-size: 1.8em;
     margin: 0;
+}
+
+.developer-credit {
+    font-size: 0.75em;
+    margin: 2px 0 0 0;
+    opacity: 0.8;
+    font-weight: normal;
 }
 
 button {
@@ -59,8 +72,8 @@ button:hover {
 .report-container {
     flex: 2;
     min-width: 400px;
-    padding: 20px;
-    padding-right: 60px !important;
+    padding: 16px;
+    padding-right: 50px !important;
     background-color: #fbfbfb;
     overflow-y: auto;
     overflow-x: auto;
@@ -106,16 +119,16 @@ button:hover {
 
 table {
     border-collapse: collapse;
-    margin-bottom: 20px;
-    font-size: 0.85em;
+    margin-bottom: 18px;
+    font-size: 0.8em;
     width: auto;
-    max-width: calc(100% - 40px);
+    max-width: calc(100% - 30px);
     table-layout: auto;
 }
 
 th, td {
     border: 1px solid #ddd;
-    padding: 8px;
+    padding: 6px;
     text-align: left;
     white-space: nowrap;
 }
@@ -126,19 +139,19 @@ th {
 }
 
 h2 {
-    margin-top: 25px;
-    margin-bottom: 15px;
+    margin-top: 20px;
+    margin-bottom: 12px;
     color: #007bff;
-    font-size: 1.3em;
+    font-size: 1.2em;
 }
 
 .material-item {
     display: inline-flex;
     align-items: center;
-    margin: 5px 10px 5px 0;
-    padding: 5px 10px;
+    margin: 4px 8px 4px 0;
+    padding: 4px 8px;
     background: #f8f9fa;
-    border-radius: 5px;
+    border-radius: 4px;
     border: 1px solid #ddd;
 }
 
@@ -167,7 +180,7 @@ h2 {
     
     * {
         -webkit-print-color-adjust: exact !important;
-        color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
     
     body {
@@ -430,6 +443,20 @@ h2 {
     flex-direction: column;
 }
 
+/* Report title styling */
+.report-title {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #007bff;
+}
+
+.report-title h1 {
+    margin: 0;
+    color: #333;
+    font-size: 2em;
+}
+
 /* Project info styling */
 .project-info {
     background: #f8f9fa;
@@ -495,4 +522,135 @@ h2 {
 
 .resizer:hover {
     background: #007bff;
+}
+
+/* Tree structure styles */
+.tree-controls {
+    margin: 10px 0;
+}
+
+.tree-search {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 10px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+}
+
+.tree-search input {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.tree-search button {
+    padding: 6px 12px;
+    font-size: 12px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 0;
+}
+
+.tree-search button:hover {
+    background: #5a6268;
+}
+
+.tree-structure {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 15px;
+    margin: 10px 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 13px;
+    max-height: 500px;
+    overflow-y: auto;
+    line-height: 1.4;
+}
+
+.tree-header {
+    font-weight: bold;
+    font-size: 14px;
+    color: #495057;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.tree-node {
+    margin: 1px 0;
+}
+
+.tree-item {
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tree-expandable:hover {
+    background-color: #e9ecef;
+}
+
+.tree-component:hover {
+    background-color: #f8f9fa;
+}
+
+.expand-icon {
+    width: 12px;
+    text-align: center;
+    font-size: 10px;
+    color: #6c757d;
+    user-select: none;
+}
+
+.node-icon {
+    font-size: 14px;
+}
+
+.node-name {
+    font-weight: 500;
+    color: #212529;
+}
+
+.node-dimensions {
+    color: #007bff;
+    font-weight: 400;
+    font-size: 12px;
+    margin-left: 4px;
+}
+
+.node-material {
+    color: #28a745;
+    font-weight: 400;
+    font-size: 12px;
+    font-style: italic;
+}
+
+.tree-children {
+    border-left: 1px dotted #dee2e6;
+    margin-left: 10px;
+}
+
+.search-highlight {
+    background-color: #fff3cd !important;
+    border: 1px solid #ffeaa7;
+    animation: highlight-pulse 1s ease-in-out;
+}
+
+@keyframes highlight-pulse {
+    0% { background-color: #fff3cd; }
+    50% { background-color: #ffeaa7; }
+    100% { background-color: #fff3cd; }
 }

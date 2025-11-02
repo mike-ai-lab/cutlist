@@ -8,7 +8,10 @@
 </head>
 <body>
     <div class="header">
-        <h1>AutoNestCut</h1>
+        <div class="header-content">
+            <h1>AutoNestCut</h1>
+            <p class="developer-credit">Developed by: Int. Arch. M.Shkeir</p>
+        </div>
         <div class="tabs">
             <button class="tab-button active" onclick="showTab('config')">Configuration</button>
             <button class="tab-button" id="reportTab" onclick="showTab('report')" disabled>Report</button>
@@ -27,19 +30,39 @@
                 <h2>General Settings</h2>
                 <div class="form-group">
                     <label for="kerf_width">Kerf Width (mm):</label>
-                    <input type="number" id="kerf_width" step="0.1" min="0" max="10">
+                    <input type="number" id="kerf_width" name="kerf_width" step="0.1" min="0" max="10">
                 </div>
                 <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="allow_rotation"> Allow part rotation
+                    <label for="allow_rotation">
+                        <input type="checkbox" id="allow_rotation" name="allow_rotation"> Allow part rotation
                     </label>
                 </div>
             </div>
             
             <div class="section">
                 <h2>Stock Materials & Pricing</h2>
-                <div id="materials_list"></div>
-                <button type="button" onclick="addMaterial()">Add Material</button>
+                <div class="materials-controls">
+                    <button type="button" onclick="addMaterial()">Add Material</button>
+                    <button type="button" onclick="loadDefaults()">Load Defaults</button>
+                    <button type="button" onclick="importCSV()">Import CSV</button>
+                    <button type="button" onclick="exportDatabase()">Export Database</button>
+                    <select id="sortBy" onchange="displayMaterials()">
+                        <option value="alphabetical">Sort: A-Z</option>
+                        <option value="usage">Sort: Used First</option>
+                        <option value="mostUsed">Sort: Most Used</option>
+                    </select>
+                    <button type="button" id="foldToggle" onclick="toggleFold()">Show Used Only</button>
+                    <button type="button" onclick="clearHighlight()" class="clear-highlight-btn">Clear Highlight</button>
+                </div>
+                <div class="materials-header">
+                    <span>Material Name</span>
+                    <span>Width (mm)</span>
+                    <span>Height (mm)</span>
+                    <span>Price</span>
+                    <span>Actions</span>
+                    <span>Status</span>
+                </div>
+                <div id="materials_list" class="materials-list"></div>
             </div>
             
             <div class="section">
@@ -63,18 +86,23 @@
             </div>
             <div class="resizer" id="resizer"></div>
             <div id="reportContainer" class="report-container">
+                <div class="report-title">
+                    <h1>AutoNestCut Report</h1>
+                    <p class="developer-credit">Developed by: Int. Arch. M.Shkeir</p>
+                </div>
+                
                 <div class="project-info">
                     <div class="project-field">
-                        <label>Project Name:</label>
-                        <input type="text" id="projectName" placeholder="Enter project name">
+                        <label for="projectName">Project Name:</label>
+                        <input type="text" id="projectName" name="projectName" placeholder="Enter project name">
                     </div>
                     <div class="project-field">
-                        <label>Address:</label>
-                        <input type="text" id="projectAddress" placeholder="Enter project address">
+                        <label for="projectAddress">Address:</label>
+                        <input type="text" id="projectAddress" name="projectAddress" placeholder="Enter project address">
                     </div>
                     <div class="project-field">
-                        <label>Date:</label>
-                        <input type="date" id="projectDate">
+                        <label for="projectDate">Date:</label>
+                        <input type="date" id="projectDate" name="projectDate">
                     </div>
                 </div>
 
@@ -94,6 +122,16 @@
                 <table id="boardsTable"></table>
 
                 <h2>Parts Placed (Detailed)</h2>
+                <div class="tree-controls">
+                    <button type="button" id="treeToggle" onclick="toggleTreeView()">Show Tree Structure</button>
+                    <div class="tree-search" id="treeSearchContainer" style="display: none;">
+                        <input type="text" id="treeSearch" placeholder="Search components..." oninput="filterTree()">
+                        <button type="button" onclick="clearTreeSearch()">Clear</button>
+                        <button type="button" onclick="expandAll()">Expand All</button>
+                        <button type="button" onclick="collapseAll()">Collapse All</button>
+                    </div>
+                </div>
+                <div id="treeStructure" class="tree-structure" style="display: none;"></div>
                 <table id="partsTable"></table>
             </div>
         </div>
@@ -136,6 +174,7 @@
             g_boardsData = data.diagrams;
             g_reportData = data.report;
             window.originalComponents = data.original_components || [];
+            window.hierarchyTree = data.hierarchy_tree || [];
             
             // Set current date as default
             document.getElementById('projectDate').value = new Date().toISOString().split('T')[0];
@@ -214,6 +253,25 @@
         function showConfigTab() {
             showTab('config');
         }
+        
+        function toggleTreeView() {
+            showTreeView = !showTreeView;
+            const button = document.getElementById('treeToggle');
+            const treeContainer = document.getElementById('treeStructure');
+            const searchContainer = document.getElementById('treeSearchContainer');
+            
+            if (showTreeView) {
+                button.textContent = 'Hide Tree Structure';
+                treeContainer.style.display = 'block';
+                searchContainer.style.display = 'flex';
+                renderTreeStructure();
+            } else {
+                button.textContent = 'Show Tree Structure';
+                treeContainer.style.display = 'none';
+                searchContainer.style.display = 'none';
+            }
+        }
+        
 
         // Initialize when DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {
