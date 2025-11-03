@@ -23,6 +23,7 @@
 - [Tips for Best Results](#tips-for-best-results)
 - [Troubleshooting](#troubleshooting)
 - [Support & Contact](#support--contact)
+ - [Local Documentation (example)](#local-documentation-example)
 
 ---
 
@@ -398,6 +399,14 @@ Toggle-able hierarchical view showing:
 ### 🐛 Report Issues
 Found a bug or need help? Contact us with:
 - Brief description of the issue
+
+## Local Documentation (example)
+
+A compact, branded HTML user guide that includes screenshots and quick references is available in the repository under the `example/` folder:
+
+- Open `example/EXTENSION_DOCUMENTATION.html` in your browser to view a user-friendly, styled documentation that uses the extension UI styles and the screenshots included in `example/`.
+
+This file is intended as a convenient, offline, developer-friendly user guide for distribution and demonstration purposes.
 - Steps to reproduce the problem
 - Expected vs actual behavior
 - Your SketchUp version and operating system

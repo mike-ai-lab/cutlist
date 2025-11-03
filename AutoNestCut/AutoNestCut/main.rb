@@ -19,7 +19,7 @@ require_relative 'exporters/report_generator'
 require_relative 'util'
 
 module AutoNestCut
-
+  # Define all methods first
   def self.activate_extension
     model = Sketchup.active_model
     selection = model.selection
@@ -41,15 +41,13 @@ module AutoNestCut
 
       dialog_manager = UIDialogManager.new
       hierarchy_tree = analyzer.get_hierarchy_tree
-      puts "Hierarchy tree from analyzer: #{hierarchy_tree.inspect}"
+      Util.debug("Hierarchy tree from analyzer: #{hierarchy_tree.inspect}")
       dialog_manager.show_config_dialog(part_types_by_material_and_quantities, original_components, hierarchy_tree)
 
     rescue => e
       UI.messagebox("An error occurred during part extraction:\n#{e.message}")
     end
   end
-
-
 
   def self.show_documentation
     # Use HtmlDialog for SU2017+ or WebDialog for older versions
@@ -80,36 +78,55 @@ module AutoNestCut
     dialog.show
   end
 
-  # Create main menu (allow recreation on reload)
-  menu = UI.menu('Extensions')
-  begin
-    autonest_menu = menu.add_submenu('AutoNestCut')
-  rescue
-    # Submenu might already exist, get it
-    autonest_menu = menu
-  end
-  
-  autonest_menu.add_item('Generate Cut List') { AutoNestCut.activate_extension }
-  autonest_menu.add_separator
-  autonest_menu.add_item('Documentation - How to...') { AutoNestCut.show_documentation }
+  def self.setup_ui
+    # Create main menu (allow recreation on reload)
+    menu = UI.menu('Extensions')
+    begin
+      autonest_menu = menu.add_submenu('AutoNestCut')
+    rescue
+      # Submenu might already exist, get it
+      autonest_menu = menu
+    end
+    
+    autonest_menu.add_item('Generate Cut List') { AutoNestCut.activate_extension }
+    autonest_menu.add_separator
+    autonest_menu.add_item('Documentation - How to...') { AutoNestCut.show_documentation }
 
-  # Create toolbar with icon
-  unless file_loaded?(__FILE__)
+    # Create toolbar with icon (recreate on each load for fresh icon)
     toolbar = UI::Toolbar.new('AutoNestCut')
     cmd = UI::Command.new('AutoNestCut') { AutoNestCut.activate_extension }
     cmd.tooltip = 'Generate optimized cut lists and nesting diagrams for sheet goods'
     cmd.status_bar_text = 'AutoNestCut - Automated nesting for sheet goods'
     
-    # Cross-platform icon path
-    icon_path = File.join(__dir__, 'resources', 'icon.png')
-    if File.exist?(icon_path)
-      cmd.small_icon = icon_path
-      cmd.large_icon = icon_path
+    # Cross-platform icon lookup with a few sensible fallbacks.
+    # Prefer a resources/icon.png located alongside this file, then the parent AutoNestCut/resources,
+    # then the repository root icon.png. Also verify the file is a PNG by checking the signature.
+    possible_icon_paths = [
+      File.join(__dir__, 'resources', 'icon.png'),
+      File.expand_path('../resources/icon.png', __dir__),
+      File.expand_path('../../icon.png', __dir__)
+    ]
+
+    chosen_icon = possible_icon_paths.find { |p| Util.png_file?(p) }
+    if chosen_icon
+      cmd.small_icon = chosen_icon
+      cmd.large_icon = chosen_icon
+      puts "✅ AutoNestCut icon loaded: #{chosen_icon}"
+    else
+      puts "⚠️ AutoNestCut: no valid icon found. Looked in: #{possible_icon_paths.join(', ')}"
     end
     
     toolbar.add_item(cmd)
     toolbar.show
-
-    file_loaded(__FILE__)
   end
+
+end
+
+# Setup UI after module is fully defined
+# Call setup_ui to initialize menus and toolbar
+AutoNestCut.setup_ui
+
+# Mark as loaded for SketchUp
+unless file_loaded?(__FILE__)
+  file_loaded(__FILE__)
 end

@@ -28,7 +28,7 @@ module AutoNestCut
       end
       materials
     rescue => e
-      puts "Error loading materials database: #{e.message}"
+      Util.debug("Error loading materials database: #{e.message}")
       {}
     end
     
@@ -48,7 +48,7 @@ module AutoNestCut
         end
       end
     rescue => e
-      puts "Error saving materials database: #{e.message}"
+      Util.debug("Error saving materials database: #{e.message}")
     end
     
     def self.import_csv(file_path)
@@ -69,7 +69,7 @@ module AutoNestCut
       end
       materials
     rescue => e
-      puts "Error importing CSV: #{e.message}"
+      Util.debug("Error importing CSV: #{e.message}")
       {}
     end
     

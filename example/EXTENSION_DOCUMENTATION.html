@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AutoNestCut — Extension Documentation</title>
+  <link rel="icon" href="../icon.png">
+  <!-- Try to reuse extension UI stylesheet for consistent branding -->
+  <link rel="stylesheet" href="../AutoNestCut/AutoNestCut/ui/html/style.css">
+  <style>
+    /* Small overrides for standalone doc layout */
+    .doc-container { max-width: 1100px; margin: 30px auto; padding: 24px; background: white; border-radius:8px; box-shadow:0 6px 24px rgba(0,0,0,0.08); }
+    .hero { display:flex; gap:20px; align-items:center; margin-bottom:18px }
+    .hero img.icon { width:48px; height:48px }
+    .hero h1 { margin:0; font-size:26px }
+    .lead { color:#666; margin-top:6px }
+    .screenshot { max-width:100%; border-radius:6px; box-shadow:0 4px 16px rgba(0,0,0,0.06); }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(300px,1fr)); gap:18px; }
+    .feature { padding:12px; border-radius:6px; background:#fbfcfd; border:1px solid #eef3f7 }
+    a.cta { display:inline-block; margin-top:12px }
+  </style>
+</head>
+<body>
+  <div class="doc-container">
+    <header class="hero">
+      <img class="icon" src="../icon.png" alt="AutoNestCut icon">
+      <div>
+        <h1>AutoNestCut — User Documentation</h1>
+        <div class="lead">Quick reference and full feature summary. Uses the same visual branding as the extension UI.</div>
+      </div>
+    </header>
+
+    <section>
+      <h2>Overview</h2>
+      <p>AutoNestCut analyzes your SketchUp model and automatically generates optimized nesting diagrams and detailed cut lists for sheet goods (plywood, MDF, etc.). This document covers features, workflow, configuration tips, and troubleshooting — with screenshots from the <code>example/</code> folder.</p>
+
+      <div class="grid">
+        <div>
+          <h3>Main features</h3>
+          <ul>
+            <li>Automatic part extraction (nested components supported)</li>
+            <li>Material database and pricing</li>
+            <li>Optimized nesting with optional rotation and kerf handling</li>
+            <li>Interactive visual diagrams and 3D previews</li>
+            <li>Exports: PDF, CSV, Interactive HTML</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Quick actions</h3>
+          <ul>
+            <li>Load wrapper during development: <code>extension/load_extension.rb</code></li>
+            <li>Reload extension quickly: <code>extension/reload_extension.rb</code></li>
+            <li>Production packaging: keep folder structure intact and include <code>AutoNestCut/AutoNestCut/resources/icon.png</code></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Screenshots</h2>
+      <p>Examples taken from the repository's <code>example/</code> folder.</p>
+      <div class="grid">
+        <div>
+          <h4>Kitchen cabinet model</h4>
+          <img class="screenshot" src="kitchen_cabinets_model_showcase.JPG" alt="Kitchen cabinet model">
+        </div>
+        <div>
+          <h4>Stock materials and pricing</h4>
+          <img class="screenshot" src="stock_materials_pricing.JPG" alt="Stock materials pricing">
+        </div>
+        <div>
+          <h4>Cutting diagram</h4>
+          <img class="screenshot" src="diagram_example.JPG" alt="Cutting diagram">
+        </div>
+        <div>
+          <h4>Interactive report example</h4>
+          <img class="screenshot" src="AutoNestCut_Interactive_Report_Updated.html" alt="Interactive report (open in browser)" />
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Detailed Feature Breakdown</h2>
+      <div class="feature">
+        <h3>Automatic Part Extraction</h3>
+        <p>AutoNestCut scans selected entities (or the whole model) and extracts parts meeting sheet-good criteria (thickness, area, aspect ratio). Nested components are recursively searched.</p>
+      </div>
+
+      <div class="feature">
+        <h3>Material Management</h3>
+        <p>Maintain a database of stock materials (dimensions and price). The extension detects materials via component attributes, face materials, or component names. Configure custom material sizes and pricing in the settings dialog.</p>
+      </div>
+
+      <div class="feature">
+        <h3>Nesting Algorithm</h3>
+        <p>Uses a greedy bin-packing approach: sort parts by area, attempt placements, allow rotation if permitted, and create new boards when needed. Kerf width and grain restrictions are respected.</p>
+      </div>
+
+      <div class="feature">
+        <h3>Visual Diagrams & 3D Preview</h3>
+        <p>Generates labeled cutting diagrams and an interactive HTML report with 3D part previews. Click parts in diagrams to inspect in 3D; diagrams show board numbering, part labels, and efficiency metrics.</p>
+      </div>
+
+      <div class="feature">
+        <h3>Exports</h3>
+        <ul>
+          <li>PDF — print-ready diagrams and reports</li>
+          <li>CSV — part lists and inventory data</li>
+          <li>Interactive HTML — shareable reports with embedded 3D views</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Developer installation notes intentionally removed to keep the public documentation focused on user-facing features. -->
+
+    <section>
+      <h2>Troubleshooting & Tips</h2>
+      <ul>
+        <li>If no parts are found: ensure components have realistic thickness and sufficient area.</li>
+        <li>For better nesting results: allow rotation where grain direction permits and set correct kerf width.</li>
+        <li>Use the material highlight controls in the UI to verify assignments before nesting.</li>
+      </ul>
+    </section>
+
+    <footer style="margin-top:18px">
+      <p>Open this file in your browser for a quick visual reference. For full details see the root <code>README.md</code> or the in-extension help pages.</p>
+    </footer>
+        <div>
+          <h4>Interactive report example</h4>
+          <!-- The interactive report is an HTML file; show a small preview icon and link to the report file present in this folder. -->
+          <a href="AutoNestCut_Interactive_Report.html" target="_blank" style="text-decoration:none;color:inherit;display:block;">
+            <img class="screenshot" src="../icon.png" alt="Interactive report (open in browser)" style="max-width:120px;display:block;margin-bottom:8px;">
+            <div style="font-weight:600;">Open interactive report (opens in a new tab)</div>
+          </a>
+        </div>
+    </footer>

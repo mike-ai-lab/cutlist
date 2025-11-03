@@ -1,19 +1,39 @@
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f5f5f5;
+    /* Keep a light, high-contrast background to improve readability */
+    background-color: #ffffff;
+    color: #222;
     display: flex;
     flex-direction: column;
     height: 100vh;
 }
 
 .header {
-    background-color: #333;
+    background: linear-gradient(90deg, #005b9f 0%, #008ad6 100%);
     color: #fff;
-    padding: 15px 20px;
+    padding: 14px 18px;
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    gap: 20px;
+}
+
+.header-left {
+    flex: 0 0 auto;
+}
+
+.header-center {
+    flex: 1 1 auto;
+    text-align: center;
+}
+
+.header-right {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 8px;
     align-items: center;
 }
 
@@ -26,27 +46,88 @@ body {
 .header h1 {
     font-size: 1.8em;
     margin: 0;
+    color: #ffffff !important;
+}
+
+.back-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.icon-btn {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s;
+    min-width: 50px;
+}
+
+.icon-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+}
+
+.icon-btn .icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.icon-btn .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .developer-credit {
-    font-size: 0.75em;
+    font-size: 0.78em;
     margin: 2px 0 0 0;
-    opacity: 0.8;
-    font-weight: normal;
+    opacity: 0.95;
+    font-weight: 400;
 }
 
 button {
-    background-color: #007bff;
-    color: white;
+    background: linear-gradient(180deg,#00A5E3 0%, #008FCC 100%);
+    color: #ffffff;
     border: none;
-    padding: 10px 18px;
-    border-radius: 5px;
+    padding: 10px 16px;
+    border-radius: 10px; /* rounded corners consistent with tree */
     cursor: pointer;
-    margin-left: 10px;
+    margin-left: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    font-weight: 600;
 }
 
 button:hover {
-    background-color: #0056b3;
+    filter: brightness(0.95);
+}
+
+/* Secondary buttons */
+.btn-secondary {
+    background: #f3f6f9;
+    color: #1f2933;
+    border: 1px solid #e3e7ea;
+    box-shadow: none;
 }
 
 .container {
@@ -59,7 +140,7 @@ button:hover {
     flex: 1;
     min-width: 300px;
     padding: 20px;
-    background-color: #fff;
+    background-color: #ffffff;
     border-right: 3px solid #ddd;
     overflow-y: auto;
     display: flex;
@@ -72,12 +153,14 @@ button:hover {
 .report-container {
     flex: 2;
     min-width: 400px;
-    padding: 16px;
+    padding: 18px;
     padding-right: 50px !important;
-    background-color: #fbfbfb;
+    background-color: #fff;
     overflow-y: auto;
     overflow-x: auto;
     box-sizing: border-box;
+    border-left: 1px solid rgba(0,0,0,0.04);
+    border-radius: 10px 0 0 10px;
 }
 
 .resizer {
@@ -93,16 +176,16 @@ button:hover {
 
 .diagram-card {
     border: 1px solid #ccc;
-    padding: 10px;
-    background-color: #f9f9f9;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    border-radius: 8px;
+    padding: 12px;
+    background-color: #fbfdff;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    border-radius: 12px;
 }
 
 .diagram-card h3 {
     font-size: 1.1em;
-    margin-bottom: 5px;
-    color: #007bff;
+    margin-bottom: 6px;
+    color: #006fb3;
 }
 
 .diagram-card p {
@@ -124,6 +207,7 @@ table {
     width: auto;
     max-width: calc(100% - 30px);
     table-layout: auto;
+    background: transparent;
 }
 
 th, td {
@@ -134,14 +218,15 @@ th, td {
 }
 
 th {
-    background-color: #eef;
-    font-weight: bold;
+    background-color: #f3f6f8;
+    font-weight: 600;
+    color: #034a6b;
 }
 
 h2 {
     margin-top: 20px;
     margin-bottom: 12px;
-    color: #007bff;
+    color: #006fb3;
     font-size: 1.2em;
 }
 
@@ -150,17 +235,17 @@ h2 {
     align-items: center;
     margin: 4px 8px 4px 0;
     padding: 4px 8px;
-    background: #f8f9fa;
-    border-radius: 4px;
-    border: 1px solid #ddd;
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.06);
 }
 
 .material-swatch {
     width: 20px;
     height: 20px;
-    border: 1px solid #333;
+    border: 1px solid rgba(0,0,0,0.08);
     margin-right: 8px;
-    border-radius: 3px;
+    border-radius: 4px;
 }
 
 .material-name {
@@ -341,14 +426,14 @@ h2 {
 }
 
 .modal-content {
-    background-color: #fefefe;
+    background-color: #ffffff;
     margin: 5% auto;
     padding: 20px;
-    border: 1px solid #888;
-    width: 500px;
-    max-width: 90%;
+    border: 1px solid rgba(0,0,0,0.06);
+    width: 520px;
+    max-width: 92%;
     max-height: 80vh;
-    border-radius: 8px;
+    border-radius: 12px;
     text-align: center;
     overflow-y: auto;
 }
@@ -414,21 +499,21 @@ h2 {
 }
 
 .tab-button {
-    background-color: #555;
+    background-color: #4b5563;
     color: white;
     border: none;
-    padding: 10px 20px;
-    border-radius: 5px 5px 0 0;
+    padding: 10px 18px;
+    border-radius: 8px 8px 0 0;
     cursor: pointer;
     margin-left: 0;
 }
 
 .tab-button.active {
-    background-color: #007bff;
+    background: linear-gradient(180deg,#00A5E3 0%, #008FCC 100%);
 }
 
 .tab-button:disabled {
-    background-color: #888;
+    background-color: #b0b7bd;
     cursor: not-allowed;
 }
 
@@ -448,7 +533,7 @@ h2 {
     text-align: center;
     margin-bottom: 30px;
     padding-bottom: 20px;
-    border-bottom: 2px solid #007bff;
+    border-bottom: 2px solid rgba(0,123,255,0.12);
 }
 
 .report-title h1 {
@@ -459,9 +544,9 @@ h2 {
 
 /* Project info styling */
 .project-info {
-    background: #f8f9fa;
+    background: #fbfdff;
     padding: 20px;
-    border-radius: 8px;
+    border-radius: 12px;
     margin-bottom: 30px;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -488,9 +573,9 @@ h2 {
 
 /* Total highlighting */
 .total-highlight {
-    background-color: #d4edda !important;
-    font-weight: bold;
-    color: #155724;
+    background-color: #eaf7ff !important;
+    font-weight: 700;
+    color: #014f6e;
 }
 
 /* Material item with price */
@@ -653,4 +738,242 @@ h2 {
     0% { background-color: #fff3cd; }
     50% { background-color: #ffeaa7; }
     100% { background-color: #fff3cd; }
+}
+
+/* Enhanced hierarchy tree visual styling (from hierarchy_tree_ui.html)
+   Scoped under .tree-structure so it only affects the report tree area */
+.tree-structure .tree {
+    position: relative;
+}
+
+.tree-structure .tree-node {
+    position: relative;
+    margin-left: 0;
+}
+
+.tree-structure .tree-item {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+.tree-structure .node-button {
+    /* scaled down to better match surrounding UI */
+    padding: 8px 14px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.18s ease;
+    display: inline-block;
+    min-width: 120px;
+}
+
+.tree-structure .node-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+}
+
+.tree-structure .level-1 .node-button {
+    background: #00A5E3;
+    color: white;
+}
+
+.tree-structure .level-2 .node-button {
+    /* Avoid low-contrast dark text on gray background — use desaturated teal with white text */
+    background: #7fa4a8;
+    color: #ffffff;
+}
+
+.tree-structure .level-3 .node-button,
+.tree-structure .level-4 .node-button,
+.tree-structure .level-5 .node-button,
+.tree-structure .level-6 .node-button,
+.tree-structure .level-7 .node-button {
+    background: white;
+    color: #333;
+    border: 2px solid #00A5E3;
+}
+
+.tree-structure .children {
+    margin-left: 40px;
+    margin-top: 15px;
+    position: relative;
+    display: none;
+}
+
+.tree-structure .children.expanded {
+    display: block;
+}
+
+/* Vertical connector line for children */
+.tree-structure .children::before {
+    content: '';
+    position: absolute;
+    left: -20px;
+    top: 0;
+    bottom: 15px;
+    width: 2px;
+    background: #ccc;
+}
+
+/* Horizontal connector */
+.tree-structure .tree-item::before {
+    content: '';
+    position: absolute;
+    left: -20px;
+    top: 20px;
+    width: 20px;
+    height: 2px;
+    background: #ccc;
+}
+
+.tree-structure > .tree-node > .tree-item::before,
+.tree-structure > .tree-node > .children::before {
+    display: none;
+}
+
+/* Toggle indicator */
+.tree-structure .node-button::after {
+    content: '';
+    display: inline-block;
+    margin-left: 8px;
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid currentColor;
+    transition: transform 0.18s ease;
+    vertical-align: middle;
+}
+
+.tree-structure .node-button.expanded::after {
+    transform: rotate(180deg);
+}
+
+.tree-structure .node-button.no-children::after {
+    display: none;
+}
+
+.tree-structure .tree-item:last-child::before {
+    display: none;
+}
+
+/* Clickable part table cells styling */
+.part-label-cell,
+.part-dimensions-cell {
+    cursor: pointer;
+    text-decoration: underline;
+    color: #0066cc;
+    transition: all 0.2s ease;
+}
+
+.part-label-cell:hover,
+.part-dimensions-cell:hover {
+    background-color: #e3f2fd !important;
+    font-weight: bold;
+    color: #003d99;
+}
+
+.part-label-cell:active,
+.part-dimensions-cell:active {
+    background-color: #bbdefb !important;
+}
+
+/* Preview Modal Styles */
+.preview-modal-content {
+    width: 90% !important;
+    max-width: 1000px !important;
+    max-height: 85vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #ddd;
+    margin-bottom: 15px;
+}
+
+.preview-header h2 {
+    margin: 0;
+    color: #333;
+    font-size: 1.5em;
+}
+
+.preview-header .close {
+    float: none;
+    margin: 0;
+}
+
+.preview-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.preview-content table {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.preview-content h3 {
+    color: #333;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+
+.preview-content h3:first-child {
+    margin-top: 0;
+}
+
+.preview-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding-top: 15px;
+    border-top: 1px solid #ddd;
+}
+
+.btn-primary {
+    background: linear-gradient(180deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-primary:hover {
+    filter: brightness(0.95);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.btn-secondary {
+    background: #f3f6f9;
+    color: #1f2933;
+    border: 1px solid #e3e7ea;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    background: #e8ecf1;
+    border-color: #d0d7de;
 }

@@ -41,5 +41,28 @@ module AutoNestCut
         "{}"
       end
     end
+
+    # Debug helper - controlled by environment variable AUTONESTCUT_DEBUG=1
+    def self.debug(msg)
+      if ENV['AUTONESTCUT_DEBUG'] == '1'
+        begin
+          puts "[AutoNestCut] #{msg}"
+        rescue
+          # best-effort
+        end
+      end
+    end
+
+    # Simple binary PNG signature check. Returns true when path exists and looks like a PNG file.
+    def self.png_file?(path)
+      return false unless path && File.exist?(path)
+      return false unless File.size(path) > 8
+      begin
+        sig = File.binread(path, 8)
+        return sig.start_with?("\x89PNG")
+      rescue
+        return false
+      end
+    end
   end
 end

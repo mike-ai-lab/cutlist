@@ -15,10 +15,10 @@ module AutoNestCut
         tree_node = build_simple_tree(entity, 0)
         if tree_node
           @hierarchy_tree << tree_node
-          puts "Added tree node: #{tree_node[:name]} (#{tree_node[:type]})"
+          Util.debug("Added tree node: #{tree_node[:name]} (#{tree_node[:type]})")
         end
       end
-      puts "Total hierarchy nodes: #{@hierarchy_tree.length}"
+      Util.debug("Total hierarchy nodes: #{@hierarchy_tree.length}")
       
       # AGGRESSIVE RECURSIVE SEARCH through ALL levels
       selection.each do |entity|

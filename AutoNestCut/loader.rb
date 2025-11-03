@@ -5,7 +5,9 @@ module AutoNestCut
   EXTENSION_VERSION = "1.0.0"
   
   unless file_loaded?(__FILE__)
-    ex = SketchupExtension.new(EXTENSION_NAME, 'f:/alt_drive/cutlist/AutoNestCut/AutoNestCut/main')
+    # Use a path relative to this loader so the extension is portable across systems
+    main_path = File.join(__dir__, 'AutoNestCut', 'main')
+    ex = SketchupExtension.new(EXTENSION_NAME, main_path)
     ex.description = 'Automated nesting and cut list generation for sheet goods'
     ex.version = EXTENSION_VERSION
     ex.copyright = '2024'

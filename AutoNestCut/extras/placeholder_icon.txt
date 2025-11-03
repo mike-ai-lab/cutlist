@@ -1,0 +1,9 @@
+This file used to be `resources/icon.png` but it was a placeholder text file (not a real PNG).
+
+If you want the toolbar icon to show up in SketchUp, add a valid 24x24 (or 32x32) PNG at one of these locations:
+
+- `AutoNestCut/AutoNestCut/resources/icon.png`  (preferred, placed inside the extension package)
+- `AutoNestCut/resources/icon.png`               (legacy location)
+- `icon.png`                                     (repo root, used as a last-resort fallback)
+
+The extension now checks these locations and verifies that the file begins with the PNG signature. If you have a ready PNG, place it into `AutoNestCut/AutoNestCut/resources/icon.png` and restart SketchUp.

@@ -7,7 +7,7 @@ function receiveInitialData(data) {
     currentSettings = data.settings;
     partsData = data.parts_by_material;
     window.hierarchyTree = data.hierarchy_tree || [];
-    console.log('Received hierarchy tree:', window.hierarchyTree);
+    // Debug logging removed for production
     
     populateSettings();
     displayPartsPreview();
@@ -160,14 +160,29 @@ function displayMaterials() {
         
         const div = document.createElement('div');
         div.className = `material-item ${isUsed ? 'material-used' : 'material-unused'}`;
+        // structured layout: name + dims + price + actions
         div.innerHTML = `
             <input type="text" value="${material}" onchange="updateMaterialName(this, '${material}')" placeholder="Material Name">
             <input type="number" value="${width}" onchange="updateMaterialWidth(this, '${material}')" placeholder="Width (mm)">
             <input type="number" value="${height}" onchange="updateMaterialHeight(this, '${material}')" placeholder="Height (mm)">
             <input type="number" value="${price}" step="0.01" onchange="updateMaterialPrice(this, '${material}')" placeholder="Price per sheet">
-            <button onclick="removeMaterial('${material}')">Remove</button>
-            <button onclick="highlightMaterial('${material}')" class="highlight-btn">👁️</button>
-            ${isUsed ? '<span class="used-indicator">✓ Used</span>' : '<span class="unused-indicator">Not Used</span>'}
+            <div class="material-actions">
+                <button class="icon-btn" title="Remove material" onclick="removeMaterial('${material}')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                        <path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M8 6v14a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M10 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <button class="icon-btn" title="Highlight material" onclick="highlightMaterial('${material}')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="material-status">${isUsed ? '<span class="used-indicator">✓ Used</span>' : '<span class="unused-indicator">Not Used</span>'}</div>
         `;
         container.appendChild(div);
     });
@@ -184,26 +199,60 @@ function displayMaterials() {
 
 function displayPartsPreview() {
     const container = document.getElementById('parts_preview');
-    let html = '<h3>Parts Found:</h3>';
-    
+    // Render a structured parts preview: material cards with a compact table of parts
+    container.innerHTML = '';
+    const header = document.createElement('h3');
+    header.textContent = 'Parts Found';
+    container.appendChild(header);
+
     Object.keys(partsData).forEach(material => {
-        const parts = partsData[material];
-        html += `<h4>${material} (${parts.length} parts)</h4>`;
-        html += '<ul>';
-        parts.forEach(part => {
-            const name = part.name || 'Unnamed Part';
-            const width = part.width || 0;
-            const height = part.height || 0;
-            const thickness = part.thickness || 0;
-            const quantity = part.total_quantity || 1;
-            if (width > 0 && height > 0 && thickness > 0) {
-                html += `<li>${name} (${quantity}x): ${width.toFixed(1)} × ${height.toFixed(1)} × ${thickness.toFixed(1)}mm</li>`;
-            }
-        });
-        html += '</ul>';
+        const parts = partsData[material] || [];
+        const card = document.createElement('div');
+        card.className = 'parts-card';
+        const title = document.createElement('div');
+        title.className = 'parts-card-title';
+        title.textContent = `${material} (${parts.length} parts)`;
+        card.appendChild(title);
+
+        if (parts.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'parts-empty';
+            empty.textContent = 'No parts for this material.';
+            card.appendChild(empty);
+        } else {
+            const table = document.createElement('table');
+            table.className = 'parts-preview-table';
+            table.innerHTML = `<thead><tr><th>Name</th><th>W (mm)</th><th>H (mm)</th><th>Thick (mm)</th><th>Qty</th></tr></thead>`;
+            const tbody = document.createElement('tbody');
+            parts.forEach(part => {
+                const name = part.name || 'Unnamed Part';
+                const width = part.width || 0;
+                const height = part.height || 0;
+                const thickness = part.thickness || 0;
+                const quantity = part.total_quantity || part.quantity || 1;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${escapeHtml(name)}</td>
+                    <td>${width > 0 ? width.toFixed(1) : '-'}</td>
+                    <td>${height > 0 ? height.toFixed(1) : '-'}</td>
+                    <td>${thickness > 0 ? thickness.toFixed(1) : '-'}</td>
+                    <td>${quantity}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            card.appendChild(table);
+        }
+
+        container.appendChild(card);
     });
-    
-    container.innerHTML = html;
+}
+
+// Small HTML escape used by parts preview
+function escapeHtml(str) {
+    return String(str).replace(/[&<>\"']/g, function (c) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":"&#39;"}[c];
+    });
 }
 
 function processNesting() {
@@ -262,7 +311,7 @@ function callRuby(method, args) {
     if (typeof sketchup === 'object' && sketchup[method]) {
         sketchup[method](args);
     } else {
-        console.log('Ruby call:', method, args);
+        // Debug logging removed for production
     }
 }
 

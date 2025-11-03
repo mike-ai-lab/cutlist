@@ -2,12 +2,12 @@ function callRuby(method, args) {
     if (typeof sketchup === 'object' && sketchup[method]) {
         sketchup[method](args);
     } else {
-        console.log('Ruby call:', method, args);
+        // Debug logging removed for production
     }
 }
 
+// receiveData: Removed verbose logging
 function receiveData(data) {
-    console.log('Received data:', data);
     g_boardsData = data.diagrams;
     g_reportData = data.report;
     
@@ -18,8 +18,8 @@ function receiveData(data) {
 let g_boardsData = [];
 let g_reportData = null;
 
+// alternative receiveData (backup) - verbose logging removed
 function receiveData(data) {
-    console.log('Received data:', data);
     g_boardsData = data.diagrams;
     g_reportData = data.report;
     window.originalComponents = data.original_components || [];
@@ -828,15 +828,10 @@ function getCompleteJSContent() {
             return getMaterialColor(material);
         }
         
+        // Scroll to the first diagram for a material
         function scrollToDiagram(material) {
-            const firstDiagram = document.getElementById(`diagram-${material}-0`);
-            if (firstDiagram) {
-                firstDiagram.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
-        
-        function scrollToDiagram(material) {
-            const firstDiagram = document.getElementById(\`diagram-\${material}-0\`);
+            const id = 'diagram-' + material + '-0';
+            const firstDiagram = document.getElementById(id);
             if (firstDiagram) {
                 firstDiagram.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }

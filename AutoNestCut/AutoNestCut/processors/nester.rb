@@ -12,7 +12,7 @@ module AutoNestCut
         if stock_dims.nil?
           # Auto-assign default sheet size for detected materials
           stock_width, stock_height = 2440.0, 1220.0
-          puts "Using default sheet size for material: #{material}"
+          Util.debug("Using default sheet size for material: #{material}")
           stock_materials_config[material] = { 'width' => stock_width, 'height' => stock_height, 'price' => 0 }
         elsif stock_dims.is_a?(Hash)
           stock_width = stock_dims['width'].to_f

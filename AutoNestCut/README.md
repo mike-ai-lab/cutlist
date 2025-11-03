@@ -156,3 +156,19 @@ Copyright 2024 AutoNestCut. All rights reserved.
 ## Support
 
 For issues and feature requests, please contact the development team.
+
+## Packaging / Publishing Notes
+
+When preparing the extension for distribution (a `.rbz` or as a packaged plugin folder), follow these simple notes:
+
+- Include a valid PNG icon inside the extension package at `AutoNestCut/AutoNestCut/resources/icon.png` (24×24 or 32×32 pixels recommended) so the toolbar shows the proper icon.
+- The loader (`loader.rb`) uses a path relative to the `AutoNestCut` folder — keep the folder structure intact when packaging.
+- Non-essential development artifacts (exported reports, console logs, dev scripts) can be kept outside the final package or in a separate `dev_tools/` or `extras/` folder.
+
+If the toolbar icon does not appear after installing the extension, make sure a valid PNG exists in one of these locations (the extension checks these):
+
+1. `AutoNestCut/AutoNestCut/resources/icon.png` (preferred)
+2. `AutoNestCut/resources/icon.png` (legacy)
+3. `../icon.png` (repository root — used only as a fallback during development)
+
+Restart SketchUp after installing the extension to ensure the toolbar loads correctly.

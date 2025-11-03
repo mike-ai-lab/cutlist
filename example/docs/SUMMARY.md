@@ -1,0 +1,10 @@
+<!-- GitBook SUMMARY (sidebar) -->
+- [Introduction](README.md)
+- [Getting Started](getting-started.md)
+- [Features](features.md)
+- [Workflow](workflow.md)
+- [Materials & Stock](materials.md)
+- [Nesting Algorithm](nesting-algorithm.md)
+- [Reports & Exports](reports-exports.md)
+- [Troubleshooting](troubleshooting.md)
+- [Contributing](contributing.md)

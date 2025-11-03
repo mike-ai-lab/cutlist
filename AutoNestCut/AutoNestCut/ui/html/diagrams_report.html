@@ -7,11 +7,26 @@
 </head>
 <body>
     <div class="header">
-        <h1>AutoNestCut Diagrams & Report</h1>
-        <button id="backButton">← Back to Configuration</button>
-        <button id="printButton">Print / Save as PDF</button>
-        <button id="exportCsvButton">Export CSV Report</button>
-        <button id="exportHtmlButton">Export Interactive HTML</button>
+        <div class="header-left">
+            <button id="backButton" class="back-btn">← Back</button>
+        </div>
+        <div class="header-center">
+            <h1>AutoNestCut Report</h1>
+        </div>
+        <div class="header-right">
+            <button id="printButton" class="icon-btn" title="Print / Save as PDF">
+                <span class="icon">📄</span>
+                <span class="label">PDF</span>
+            </button>
+            <button id="exportCsvButton" class="icon-btn" title="Export CSV Report">
+                <span class="icon">📊</span>
+                <span class="label">CSV</span>
+            </button>
+            <button id="exportHtmlButton" class="icon-btn" title="Export Interactive HTML">
+                <span class="icon">🌐</span>
+                <span class="label">HTML</span>
+            </button>
+        </div>
     </div>
 
     <div class="container">
@@ -59,6 +74,21 @@
             </div>
             <canvas id="modalCanvas" width="500" height="400"></canvas>
             <div id="modalInfo"></div>
+        </div>
+    </div>
+
+    <!-- Preview Modal for Export -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content preview-modal-content">
+            <div class="preview-header">
+                <h2>Export Preview</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div id="previewContent" class="preview-content"></div>
+            <div class="preview-footer">
+                <button id="confirmExportBtn" class="btn-primary">Confirm Export</button>
+                <button id="cancelExportBtn" class="btn-secondary">Cancel</button>
+            </div>
         </div>
     </div>
 

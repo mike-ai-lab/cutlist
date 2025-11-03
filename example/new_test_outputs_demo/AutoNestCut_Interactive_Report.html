@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>AutoNestCut Interactive Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .container { display: flex; gap: 20px; }
+        .diagrams-container { flex: 1; }
+        .report-container { flex: 1; }
+        .resizer { width: 5px; background: #ddd; cursor: col-resize; flex-shrink: 0; }
+        .diagram-card { border: 1px solid #ddd; margin: 10px 0; padding: 10px; }
+        .diagram-canvas { border: 1px solid #ccc; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.8em; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); }
+        .modal-content { background-color: #fefefe; margin: 2% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 900px; max-height: 90vh; overflow-y: auto; }
+        .modal-controls { margin-bottom: 10px; }
+        .modal-controls button { margin-right: 10px; padding: 5px 10px; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: black; }
+        #modalCanvas { border: 1px solid #ddd; }
+        #modalInfo { margin-top: 15px; }
+        .material-item { display: flex; align-items: center; margin: 5px 0; cursor: pointer; }
+        .material-swatch { width: 20px; height: 20px; margin-right: 10px; border: 1px solid #ccc; }
+        .total-highlight { font-weight: bold; }
+    </style>
+    <!-- Annotation system styles (modern, accessible, non-yellow palette) -->
+    <style>
+        /* Modern annotation styling: blue/teal palette, clean sans-serif */
+        .annot-icon {
+            display:inline-block; margin-left:8px; width:20px;height:20px; line-height:20px; text-align:center;
+            border-radius:50%; background:#d32f2f; color:#ffffff; font-size:12px; font-weight:700; cursor:help;
+            vertical-align:middle; box-shadow:0 6px 18px rgba(6,17,34,0.06);
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+            border:2px solid rgba(255,255,255,0.12);
+        }
+        .annot-icon:hover { transform: translateY(-1px); }
+
+        .annot-tooltip {
+            position:absolute; z-index:10050; max-width:380px; background:#fbf6ff; /* soft lavender */
+            border-radius:12px; padding:14px; color:#0f172a; font-size:14px;
+            box-shadow:0 18px 48px rgba(12,20,40,0.12); display:none; font-family: system-ui, -apple-system, 'Segoe UI', Roboto;
+            border:1px solid rgba(124,58,237,0.08);
+        }
+
+        .annot-badge {
+            position: absolute; z-index:10040; min-width:30px; height:30px; line-height:30px; text-align:center;
+            border-radius:50%; background:#d32f2f; color:#ffffff; font-weight:800; box-shadow:0 8px 22px rgba(6,17,34,0.08);
+            font-size:15px; cursor:pointer; transition:transform 180ms cubic-bezier(.2,.9,.2,1), background 180ms ease; border:2px solid rgba(255,255,255,0.06);
+        }
+        .annot-badge:hover { transform: translateY(-4px) scale(1.08); background: #b71c1c; box-shadow:0 12px 36px rgba(6,17,34,0.10); }
+        .annot-badge.anchored-left { background:#c62828; box-shadow:0 10px 30px rgba(6,17,34,0.09); }
+
+        .annotation-legend {
+            position: fixed; right: 18px; bottom: 18px; z-index: 10030; width: 360px; max-height: 55vh; overflow:auto;
+            background: #fbf6ff; /* match tooltip bg */ border-radius:14px; padding:14px; box-shadow:0 28px 80px rgba(12,20,40,0.12);
+            font-size:14px; display:none; font-family: system-ui, -apple-system, 'Segoe UI', Roboto;
+            border:1px solid rgba(43,110,246,0.06);
+            transition: box-shadow 220ms ease, transform 220ms ease, opacity 180ms ease;
+            opacity: 0; transform: translateY(8px) scale(0.995);
+        }
+        .annotation-legend.open { display: block; opacity: 1; transform: translateY(0) scale(1); box-shadow:0 32px 96px rgba(43,110,246,0.14); }
+        .annotation-legend .legend-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px }
+        .annotation-legend .legend-header .title { font-weight:800; color:#0f172a }
+        .annotation-legend .legend-header .toggle { background:#0f172a; color:#fff; border:none; padding:6px 10px; border-radius:8px; cursor:pointer; font-family:inherit }
+        .annotation-legend .item { margin-bottom:10px; display:flex; gap:10px; align-items:flex-start; }
+        .annotation-legend .item .num { width:34px; height:34px; border-radius:50%; background:#2b6ef6; color:#fff; display:inline-flex; align-items:center; justify-content:center; font-weight:800; box-shadow:0 8px 20px rgba(43,110,246,0.12); }
+    .annotation-legend .item .txt { color:#0b1220; }
+        .annot-inline-note { color:#0b1220; font-size:12px; padding:6px 10px; background:#f8fafc; border-radius:8px; border:1px solid rgba(15,23,42,0.04); margin-left:8px; font-family:inherit }
+
+        /* Highlighted element visual style (non-invasive) */
+        @keyframes pulseOutline { 0% { box-shadow: 0 0 0 0 rgba(43,110,246,0.00); } 50% { box-shadow: 0 0 0 18px rgba(43,110,246,0.14); } 100% { box-shadow: 0 0 0 0 rgba(43,110,246,0.00); } }
+        .annot-highlight {
+            position: relative; z-index:10070; border-radius:12px; outline: none;
+            box-shadow: 0 18px 48px rgba(43,110,246,0.18), 0 0 0 6px rgba(43,110,246,0.12);
+            transition: box-shadow 180ms ease, transform 180ms ease; animation: pulseOutline 1.4s ease-out infinite;
+            transform-origin: center; transform: translateZ(0);
+        }
+        /* additional class: element-inspector-highlight (non-red blue glow) */
+        .element-inspector-highlight { box-shadow: 0 22px 72px rgba(43,110,246,0.22), 0 0 0 8px rgba(43,110,246,0.14) !important; border-radius:12px !important; }
+
+        /* small minimized badge when legend collapsed */
+        .annotation-minimized { position: fixed; right: 18px; bottom: 18px; z-index:10040; width:46px; height:46px; border-radius:50%; background:#2b6ef6; color:#ffffff; display:none; align-items:center; justify-content:center; box-shadow:0 12px 36px rgba(43,110,246,0.18); cursor:pointer; font-weight:800 }
+
+        /* Print rules: make annotations visible but clean */
+        @media print {
+            .annot-icon { display:inline-block !important; background:#000 !important; color:#fff !important; }
+            .annot-tooltip, .annotation-legend { display:block !important; position: static !important; box-shadow:none !important; border:1px solid #ddd !important; max-width:100% !important; margin-top:8px; }
+            .annotation-legend { position: static; width:100%; max-height:none; margin:10px 0; padding:10px; }
+            .annot-badge { position: relative; display:inline-block; transform:none; box-shadow:none; }
+            .annotation-minimized { display:none !important }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 data-annot="Title of the report document.">AutoNestCut Interactive Report</h1>
+        <button onclick="window.print()" data-annot="Click to print or save this page as PDF">Print / Save as PDF</button>
+    </div>
+    <div class="container">
+        <div id="diagramsContainer" class="diagrams-container" data-callout="Cutting diagrams||This area shows generated nesting diagrams for each stock board. Click a part to open a 3D preview and details."></div>
+        <div class="resizer" id="resizer"></div>
+        <div class="resizer" id="resizer"></div>
+        <div id="reportContainer" class="report-container">
+            <h2 data-callout="Overall summary||High-level project metrics: total parts, boards, efficiency and estimated cost.">Overall Summary</h2>
+            <table id="summaryTable"></table>
+            <h2 data-callout="Materials used||List of stock materials detected and pricing; click to scroll to corresponding diagrams.">Materials Used</h2>
+            <div id="materialsContainer"></div>
+            <h2>Unique Part Types</h2>
+            <table id="uniquePartTypesTable"></table>
+            <h2>Unique Board Types</h2>
+            <table id="uniqueBoardTypesTable"></table>
+            <h2 data-callout="Boards summary||Per-board summaries showing efficiency and waste percentage for each nested board.">Boards Summary</h2>
+            <table id="boardsTable"></table>
+            <h2 data-callout="Parts list||Detailed list of every placed part and its board assignment.">Parts Placed (Detailed)</h2>
+            <table id="partsTable"></table>
+        </div>
+    </div>
+    <div id="partModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="modal-controls">
+                <button id="projectionToggle">Orthographic</button>
+            </div>
+            <canvas id="modalCanvas" width="500" height="400"></canvas>
+            <div id="modalInfo"></div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        let g_boardsData = [{"material":"Sheet_Material","stock_width":2440,"stock_height":1220,"parts_count":9,"used_area":2468844,"waste_area":507956,"waste_percentage":17.06,"efficiency_percentage":82.94,"parts":[{"name":"Left side4","width":560,"height":850,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":476000,"x":0,"y":0,"rotated":false,"instance_id":"P1","texture_data":null},{"name":"Lower board`1","width":560,"height":560,"thickness":20,"material":"Sheet_Material","grain_direction":"any","area":313600,"x":570,"y":0,"rotated":false,"instance_id":"P2","texture_data":null},{"name":"Lower board`1","width":560,"height":560,"thickness":20,"material":"Sheet_Material","grain_direction":"any","area":313600,"x":1140,"y":0,"rotated":false,"instance_id":"P3","texture_data":null},{"name":"Lower board`1","width":560,"height":560,"thickness":20,"material":"Sheet_Material","grain_direction":"any","area":313600,"x":1710,"y":0,"rotated":false,"instance_id":"P4","texture_data":null},{"name":"Lower board`1","width":560,"height":560,"thickness":20,"material":"Sheet_Material","grain_direction":"any","area":313600,"x":570,"y":570,"rotated":false,"instance_id":"P5","texture_data":null},{"name":"Drawer bottom board","width":519,"height":538,"thickness":10,"material":"Sheet_Material","grain_direction":"any","area":279222,"x":1140,"y":570,"rotated":false,"instance_id":"P6","texture_data":null},{"name":"Drawer bottom board","width":519,"height":538,"thickness":10,"material":"Sheet_Material","grain_direction":"any","area":279222,"x":1670,"y":570,"rotated":false,"instance_id":"P7","texture_data":null},{"name":"Plinth``1","width":150,"height":600,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":90000,"x":2280,"y":0,"rotated":false,"instance_id":"P8","texture_data":null},{"name":"Plinth``1","width":150,"height":600,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":90000,"x":2200,"y":610,"rotated":false,"instance_id":"P9","texture_data":null}]},{"material":"Sheet_Material","stock_width":2440,"stock_height":1220,"parts_count":12,"used_area":2542115.9999999995,"waste_area":434684.00000000047,"waste_percentage":14.6,"efficiency_percentage":85.4,"parts":[{"name":"Drawer bottom board","width":519,"height":538,"thickness":10,"material":"Sheet_Material","grain_direction":"any","area":279222,"x":0,"y":0,"rotated":false,"instance_id":"P10","texture_data":null},{"name":"Drawer bottom board","width":519,"height":538,"thickness":10,"material":"Sheet_Material","grain_direction":"any","area":279222,"x":530,"y":0,"rotated":false,"instance_id":"P11","texture_data":null},{"name":"Drawer bottom board2","width":519,"height":538,"thickness":10,"material":"Sheet_Material","grain_direction":"any","area":279222,"x":1060,"y":0,"rotated":false,"instance_id":"P12","texture_data":null},{"name":"Drawer bottom board2","width":519,"height":538,"thickness":10,"material":"Sheet_Material","grain_direction":"any","area":279222,"x":1590,"y":0,"rotated":false,"instance_id":"P13","texture_data":null},{"name":"Drawer bottom board2","width":519,"height":538,"thickness":10,"material":"Sheet_Material","grain_direction":"any","area":279222,"x":0,"y":550,"rotated":false,"instance_id":"P14","texture_data":null},{"name":"Drawer bottom board2","width":519,"height":538,"thickness":10,"material":"Sheet_Material","grain_direction":"any","area":279222,"x":530,"y":550,"rotated":false,"instance_id":"P15","texture_data":null},{"name":"Shelf 2`1","width":490,"height":560,"thickness":20,"material":"Sheet_Material","grain_direction":"any","area":274400,"x":1060,"y":550,"rotated":false,"instance_id":"P16","texture_data":null},{"name":"Shelf 2`1","width":490,"height":560,"thickness":20,"material":"Sheet_Material","grain_direction":"any","area":274400,"x":1560,"y":550,"rotated":false,"instance_id":"P17","texture_data":null},{"name":"Plinth``1","width":150,"height":600,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":90000,"x":2120,"y":0,"rotated":false,"instance_id":"P18","texture_data":null},{"name":"Plinth``1","width":150,"height":600,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":90000,"x":2280,"y":0,"rotated":false,"instance_id":"P19","texture_data":null},{"name":"Drawer left side board2","width":128,"height":539,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":68992,"x":2060,"y":610,"rotated":false,"instance_id":"P20","texture_data":null},{"name":"Drawer right side board2","width":128,"height":539,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":68992,"x":2200,"y":610,"rotated":false,"instance_id":"P21","texture_data":null}]},{"material":"Sheet_Material","stock_width":2440,"stock_height":1220,"parts_count":19,"used_area":2535232,"waste_area":441568,"waste_percentage":14.83,"efficiency_percentage":85.17,"parts":[{"name":"Shelf 2`1","width":490,"height":560,"thickness":20,"material":"Sheet_Material","grain_direction":"any","area":274400,"x":0,"y":0,"rotated":false,"instance_id":"P22","texture_data":null},{"name":"Shelf 1`1","width":490,"height":560,"thickness":20,"material":"Sheet_Material","grain_direction":"any","area":274400,"x":500,"y":0,"rotated":false,"instance_id":"P23","texture_data":null},{"name":"Shelf 1`1","width":490,"height":560,"thickness":20,"material":"Sheet_Material","grain_direction":"any","area":274400,"x":1000,"y":0,"rotated":false,"instance_id":"P24","texture_data":null},{"name":"Shelf 1`1","width":490,"height":560,"thickness":20,"material":"Sheet_Material","grain_direction":"any","area":274400,"x":1500,"y":0,"rotated":false,"instance_id":"P25","texture_data":null},{"name":"Shelf 2`1","width":490,"height":560,"thickness":20,"material":"Sheet_Material","grain_direction":"any","area":274400,"x":0,"y":570,"rotated":false,"instance_id":"P26","texture_data":null},{"name":"Shelf 1`1","width":490,"height":560,"thickness":20,"material":"Sheet_Material","grain_direction":"any","area":274400,"x":500,"y":570,"rotated":false,"instance_id":"P27","texture_data":null},{"name":"Drawer right side board","width":128,"height":539,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":68992,"x":2000,"y":0,"rotated":false,"instance_id":"P28","texture_data":null},{"name":"Drawer right side board","width":128,"height":539,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":68992,"x":2140,"y":0,"rotated":false,"instance_id":"P29","texture_data":null},{"name":"Drawer right side board","width":128,"height":539,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":68992,"x":2280,"y":0,"rotated":false,"instance_id":"P30","texture_data":null},{"name":"Drawer right side board","width":128,"height":539,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":68992,"x":2000,"y":550,"rotated":false,"instance_id":"P31","texture_data":null},{"name":"Drawer left side board2","width":128,"height":539,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":68992,"x":2140,"y":550,"rotated":false,"instance_id":"P32","texture_data":null},{"name":"Drawer right side board2","width":128,"height":539,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":68992,"x":2280,"y":550,"rotated":false,"instance_id":"P33","texture_data":null},{"name":"Drawer left side board2","width":128,"height":539,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":68992,"x":1000,"y":570,"rotated":false,"instance_id":"P34","texture_data":null},{"name":"Drawer left side board2","width":128,"height":539,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":68992,"x":1140,"y":570,"rotated":false,"instance_id":"P35","texture_data":null},{"name":"Drawer right side board2","width":128,"height":539,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":68992,"x":1280,"y":570,"rotated":false,"instance_id":"P36","texture_data":null},{"name":"Drawer right side board2","width":128,"height":539,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":68992,"x":1420,"y":570,"rotated":false,"instance_id":"P37","texture_data":null},{"name":"Drawer front board","width":128,"height":518,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":66304,"x":1560,"y":570,"rotated":false,"instance_id":"P38","texture_data":null},{"name":"Drawer front board","width":128,"height":518,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":66304,"x":1700,"y":570,"rotated":false,"instance_id":"P39","texture_data":null},{"name":"Drawer back board","width":128,"height":518,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":66304,"x":1840,"y":570,"rotated":false,"instance_id":"P40","texture_data":null}]},{"material":"Sheet_Material","stock_width":2440,"stock_height":1220,"parts_count":9,"used_area":596736.0000000001,"waste_area":2380064,"waste_percentage":79.95,"efficiency_percentage":20.049999999999997,"parts":[{"name":"Drawer front board2","width":128,"height":518,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":66304,"x":0,"y":0,"rotated":false,"instance_id":"P41","texture_data":null},{"name":"Drawer front board2","width":128,"height":518,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":66304,"x":140,"y":0,"rotated":false,"instance_id":"P42","texture_data":null},{"name":"Drawer front board2","width":128,"height":518,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":66304,"x":280,"y":0,"rotated":false,"instance_id":"P43","texture_data":null},{"name":"Drawer front board2","width":128,"height":518,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":66304,"x":420,"y":0,"rotated":false,"instance_id":"P44","texture_data":null},{"name":"Drawer back board","width":128,"height":518,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":66304,"x":560,"y":0,"rotated":false,"instance_id":"P45","texture_data":null},{"name":"Drawer back board","width":128,"height":518,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":66304,"x":700,"y":0,"rotated":false,"instance_id":"P46","texture_data":null},{"name":"Drawer back board","width":128,"height":518,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":66304,"x":840,"y":0,"rotated":false,"instance_id":"P47","texture_data":null},{"name":"Drawer front board","width":128,"height":518,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":66304,"x":980,"y":0,"rotated":false,"instance_id":"P48","texture_data":null},{"name":"Drawer front board","width":128,"height":518,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","area":66304,"x":1120,"y":0,"rotated":false,"instance_id":"P49","texture_data":null}]},{"material":"Oak (CPRTF8)","stock_width":2440,"stock_height":1220,"parts_count":11,"used_area":2674028.0000000005,"waste_area":302771.99999999953,"waste_percentage":10.17,"efficiency_percentage":89.83,"parts":[{"name":"Left side2","width":560,"height":850,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","area":476000,"x":0,"y":0,"rotated":false,"instance_id":"P50","texture_data":null},{"name":"Left side2","width":560,"height":850,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","area":476000,"x":570,"y":0,"rotated":false,"instance_id":"P51","texture_data":null},{"name":"Left side2","width":560,"height":850,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","area":476000,"x":1140,"y":0,"rotated":false,"instance_id":"P52","texture_data":null},{"name":"Left side2","width":560,"height":850,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","area":476000,"x":1710,"y":0,"rotated":false,"instance_id":"P53","texture_data":null},{"name":"Facadeaa","width":398,"height":298,"thickness":37.2,"material":"Oak (CPRTF8)","grain_direction":"any","area":118604,"x":0,"y":860,"rotated":true,"instance_id":"P54","texture_data":null},{"name":"Facadeaa","width":398,"height":298,"thickness":37.2,"material":"Oak (CPRTF8)","grain_direction":"any","area":118604,"x":410,"y":860,"rotated":true,"instance_id":"P55","texture_data":null},{"name":"Facadeaa","width":398,"height":298,"thickness":37.2,"material":"Oak (CPRTF8)","grain_direction":"any","area":118604,"x":820,"y":860,"rotated":true,"instance_id":"P56","texture_data":null},{"name":"Facadea","width":398,"height":298,"thickness":37.2,"material":"Oak (CPRTF8)","grain_direction":"any","area":118604,"x":1230,"y":860,"rotated":true,"instance_id":"P57","texture_data":null},{"name":"Facadea","width":398,"height":298,"thickness":37.2,"material":"Oak (CPRTF8)","grain_direction":"any","area":118604,"x":1640,"y":860,"rotated":true,"instance_id":"P58","texture_data":null},{"name":"drawer facade","width":148,"height":598,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","area":88504,"x":2280,"y":0,"rotated":false,"instance_id":"P59","texture_data":null},{"name":"drawer facade","width":148,"height":598,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","area":88504,"x":2280,"y":610,"rotated":false,"instance_id":"P60","texture_data":null}]},{"material":"Oak (CPRTF8)","stock_width":2440,"stock_height":1220,"parts_count":9,"used_area":2436820.0000000005,"waste_area":539979.9999999995,"waste_percentage":18.14,"efficiency_percentage":81.86,"parts":[{"name":"Left side2","width":560,"height":850,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","area":476000,"x":0,"y":0,"rotated":false,"instance_id":"P61","texture_data":null},{"name":"Left side2","width":560,"height":850,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","area":476000,"x":570,"y":0,"rotated":false,"instance_id":"P62","texture_data":null},{"name":"Left side2","width":560,"height":850,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","area":476000,"x":1140,"y":0,"rotated":false,"instance_id":"P63","texture_data":null},{"name":"Left side2","width":560,"height":850,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","area":476000,"x":1710,"y":0,"rotated":false,"instance_id":"P64","texture_data":null},{"name":"Facadea","width":398,"height":298,"thickness":37.2,"material":"Oak (CPRTF8)","grain_direction":"any","area":118604,"x":0,"y":860,"rotated":true,"instance_id":"P65","texture_data":null},{"name":"Facadea","width":398,"height":298,"thickness":37.2,"material":"Oak (CPRTF8)","grain_direction":"any","area":118604,"x":410,"y":860,"rotated":true,"instance_id":"P66","texture_data":null},{"name":"Facadeaa","width":398,"height":298,"thickness":37.2,"material":"Oak (CPRTF8)","grain_direction":"any","area":118604,"x":820,"y":860,"rotated":true,"instance_id":"P67","texture_data":null},{"name":"drawer facade","width":148,"height":598,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","area":88504,"x":2280,"y":0,"rotated":false,"instance_id":"P68","texture_data":null},{"name":"drawer facade 2","width":148,"height":598,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","area":88504,"x":2280,"y":610,"rotated":false,"instance_id":"P69","texture_data":null}]},{"material":"Oak (CPRTF8)","stock_width":2440,"stock_height":1220,"parts_count":4,"used_area":354016.0000000003,"waste_area":2622783.9999999995,"waste_percentage":88.11,"efficiency_percentage":11.89,"parts":[{"name":"drawer facade 2","width":148,"height":598,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","area":88504,"x":0,"y":0,"rotated":false,"instance_id":"P70","texture_data":null},{"name":"drawer facade 2","width":148,"height":598,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","area":88504,"x":160,"y":0,"rotated":false,"instance_id":"P71","texture_data":null},{"name":"drawer facade 2","width":148,"height":598,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","area":88504,"x":320,"y":0,"rotated":false,"instance_id":"P72","texture_data":null},{"name":"drawer facade","width":148,"height":598,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","area":88504,"x":480,"y":0,"rotated":false,"instance_id":"P73","texture_data":null}]},{"material":"Hardwood Plywood (4C2IOU)","stock_width":2440,"stock_height":1220,"parts_count":4,"used_area":265216,"waste_area":2711584,"waste_percentage":91.09,"efficiency_percentage":8.909999999999997,"parts":[{"name":"Drawer back board2","width":128,"height":518,"thickness":20,"material":"Hardwood Plywood (4C2IOU)","grain_direction":"vertical","area":66304,"x":0,"y":0,"rotated":false,"instance_id":"P74","texture_data":null},{"name":"Drawer back board2","width":128,"height":518,"thickness":20,"material":"Hardwood Plywood (4C2IOU)","grain_direction":"vertical","area":66304,"x":140,"y":0,"rotated":false,"instance_id":"P75","texture_data":null},{"name":"Drawer back board2","width":128,"height":518,"thickness":20,"material":"Hardwood Plywood (4C2IOU)","grain_direction":"vertical","area":66304,"x":280,"y":0,"rotated":false,"instance_id":"P76","texture_data":null},{"name":"Drawer back board2","width":128,"height":518,"thickness":20,"material":"Hardwood Plywood (4C2IOU)","grain_direction":"vertical","area":66304,"x":420,"y":0,"rotated":false,"instance_id":"P77","texture_data":null}]},{"material":"CHESTNUT_WOOD","stock_width":2440,"stock_height":1220,"parts_count":4,"used_area":1254400,"waste_area":1722400,"waste_percentage":57.86,"efficiency_percentage":42.14,"parts":[{"name":"Up board4","width":560,"height":560,"thickness":20,"material":"CHESTNUT_WOOD","grain_direction":"any","area":313600,"x":0,"y":0,"rotated":false,"instance_id":"P78","texture_data":null},{"name":"Up board4","width":560,"height":560,"thickness":20,"material":"CHESTNUT_WOOD","grain_direction":"any","area":313600,"x":570,"y":0,"rotated":false,"instance_id":"P79","texture_data":null},{"name":"Up board4","width":560,"height":560,"thickness":20,"material":"CHESTNUT_WOOD","grain_direction":"any","area":313600,"x":1140,"y":0,"rotated":false,"instance_id":"P80","texture_data":null},{"name":"Up board4","width":560,"height":560,"thickness":20,"material":"CHESTNUT_WOOD","grain_direction":"any","area":313600,"x":1710,"y":0,"rotated":false,"instance_id":"P81","texture_data":null}]}];
+        let g_reportData = {"parts_placed":[{"part_unique_id":"P1","name":"Left side4","width":560,"height":850,"thickness":20,"material":"Sheet_Material","area":476000,"board_number":1,"position_x":0,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P2","name":"Lower board`1","width":560,"height":560,"thickness":20,"material":"Sheet_Material","area":313600,"board_number":1,"position_x":570,"position_y":0,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P3","name":"Lower board`1","width":560,"height":560,"thickness":20,"material":"Sheet_Material","area":313600,"board_number":1,"position_x":1140,"position_y":0,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P4","name":"Lower board`1","width":560,"height":560,"thickness":20,"material":"Sheet_Material","area":313600,"board_number":1,"position_x":1710,"position_y":0,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P5","name":"Lower board`1","width":560,"height":560,"thickness":20,"material":"Sheet_Material","area":313600,"board_number":1,"position_x":570,"position_y":570,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P6","name":"Drawer bottom board","width":519,"height":538,"thickness":10,"material":"Sheet_Material","area":279222,"board_number":1,"position_x":1140,"position_y":570,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P7","name":"Drawer bottom board","width":519,"height":538,"thickness":10,"material":"Sheet_Material","area":279222,"board_number":1,"position_x":1670,"position_y":570,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P8","name":"Plinth``1","width":150,"height":600,"thickness":20,"material":"Sheet_Material","area":90000,"board_number":1,"position_x":2280,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P9","name":"Plinth``1","width":150,"height":600,"thickness":20,"material":"Sheet_Material","area":90000,"board_number":1,"position_x":2200,"position_y":610,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P10","name":"Drawer bottom board","width":519,"height":538,"thickness":10,"material":"Sheet_Material","area":279222,"board_number":2,"position_x":0,"position_y":0,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P11","name":"Drawer bottom board","width":519,"height":538,"thickness":10,"material":"Sheet_Material","area":279222,"board_number":2,"position_x":530,"position_y":0,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P12","name":"Drawer bottom board2","width":519,"height":538,"thickness":10,"material":"Sheet_Material","area":279222,"board_number":2,"position_x":1060,"position_y":0,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P13","name":"Drawer bottom board2","width":519,"height":538,"thickness":10,"material":"Sheet_Material","area":279222,"board_number":2,"position_x":1590,"position_y":0,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P14","name":"Drawer bottom board2","width":519,"height":538,"thickness":10,"material":"Sheet_Material","area":279222,"board_number":2,"position_x":0,"position_y":550,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P15","name":"Drawer bottom board2","width":519,"height":538,"thickness":10,"material":"Sheet_Material","area":279222,"board_number":2,"position_x":530,"position_y":550,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P16","name":"Shelf 2`1","width":490,"height":560,"thickness":20,"material":"Sheet_Material","area":274400,"board_number":2,"position_x":1060,"position_y":550,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P17","name":"Shelf 2`1","width":490,"height":560,"thickness":20,"material":"Sheet_Material","area":274400,"board_number":2,"position_x":1560,"position_y":550,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P18","name":"Plinth``1","width":150,"height":600,"thickness":20,"material":"Sheet_Material","area":90000,"board_number":2,"position_x":2120,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P19","name":"Plinth``1","width":150,"height":600,"thickness":20,"material":"Sheet_Material","area":90000,"board_number":2,"position_x":2280,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P20","name":"Drawer left side board2","width":128,"height":539,"thickness":20,"material":"Sheet_Material","area":68992,"board_number":2,"position_x":2060,"position_y":610,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P21","name":"Drawer right side board2","width":128,"height":539,"thickness":20,"material":"Sheet_Material","area":68992,"board_number":2,"position_x":2200,"position_y":610,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P22","name":"Shelf 2`1","width":490,"height":560,"thickness":20,"material":"Sheet_Material","area":274400,"board_number":3,"position_x":0,"position_y":0,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P23","name":"Shelf 1`1","width":490,"height":560,"thickness":20,"material":"Sheet_Material","area":274400,"board_number":3,"position_x":500,"position_y":0,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P24","name":"Shelf 1`1","width":490,"height":560,"thickness":20,"material":"Sheet_Material","area":274400,"board_number":3,"position_x":1000,"position_y":0,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P25","name":"Shelf 1`1","width":490,"height":560,"thickness":20,"material":"Sheet_Material","area":274400,"board_number":3,"position_x":1500,"position_y":0,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P26","name":"Shelf 2`1","width":490,"height":560,"thickness":20,"material":"Sheet_Material","area":274400,"board_number":3,"position_x":0,"position_y":570,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P27","name":"Shelf 1`1","width":490,"height":560,"thickness":20,"material":"Sheet_Material","area":274400,"board_number":3,"position_x":500,"position_y":570,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P28","name":"Drawer right side board","width":128,"height":539,"thickness":20,"material":"Sheet_Material","area":68992,"board_number":3,"position_x":2000,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P29","name":"Drawer right side board","width":128,"height":539,"thickness":20,"material":"Sheet_Material","area":68992,"board_number":3,"position_x":2140,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P30","name":"Drawer right side board","width":128,"height":539,"thickness":20,"material":"Sheet_Material","area":68992,"board_number":3,"position_x":2280,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P31","name":"Drawer right side board","width":128,"height":539,"thickness":20,"material":"Sheet_Material","area":68992,"board_number":3,"position_x":2000,"position_y":550,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P32","name":"Drawer left side board2","width":128,"height":539,"thickness":20,"material":"Sheet_Material","area":68992,"board_number":3,"position_x":2140,"position_y":550,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P33","name":"Drawer right side board2","width":128,"height":539,"thickness":20,"material":"Sheet_Material","area":68992,"board_number":3,"position_x":2280,"position_y":550,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P34","name":"Drawer left side board2","width":128,"height":539,"thickness":20,"material":"Sheet_Material","area":68992,"board_number":3,"position_x":1000,"position_y":570,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P35","name":"Drawer left side board2","width":128,"height":539,"thickness":20,"material":"Sheet_Material","area":68992,"board_number":3,"position_x":1140,"position_y":570,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P36","name":"Drawer right side board2","width":128,"height":539,"thickness":20,"material":"Sheet_Material","area":68992,"board_number":3,"position_x":1280,"position_y":570,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P37","name":"Drawer right side board2","width":128,"height":539,"thickness":20,"material":"Sheet_Material","area":68992,"board_number":3,"position_x":1420,"position_y":570,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P38","name":"Drawer front board","width":128,"height":518,"thickness":20,"material":"Sheet_Material","area":66304,"board_number":3,"position_x":1560,"position_y":570,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P39","name":"Drawer front board","width":128,"height":518,"thickness":20,"material":"Sheet_Material","area":66304,"board_number":3,"position_x":1700,"position_y":570,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P40","name":"Drawer back board","width":128,"height":518,"thickness":20,"material":"Sheet_Material","area":66304,"board_number":3,"position_x":1840,"position_y":570,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P41","name":"Drawer front board2","width":128,"height":518,"thickness":20,"material":"Sheet_Material","area":66304,"board_number":4,"position_x":0,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P42","name":"Drawer front board2","width":128,"height":518,"thickness":20,"material":"Sheet_Material","area":66304,"board_number":4,"position_x":140,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P43","name":"Drawer front board2","width":128,"height":518,"thickness":20,"material":"Sheet_Material","area":66304,"board_number":4,"position_x":280,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P44","name":"Drawer front board2","width":128,"height":518,"thickness":20,"material":"Sheet_Material","area":66304,"board_number":4,"position_x":420,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P45","name":"Drawer back board","width":128,"height":518,"thickness":20,"material":"Sheet_Material","area":66304,"board_number":4,"position_x":560,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P46","name":"Drawer back board","width":128,"height":518,"thickness":20,"material":"Sheet_Material","area":66304,"board_number":4,"position_x":700,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P47","name":"Drawer back board","width":128,"height":518,"thickness":20,"material":"Sheet_Material","area":66304,"board_number":4,"position_x":840,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P48","name":"Drawer front board","width":128,"height":518,"thickness":20,"material":"Sheet_Material","area":66304,"board_number":4,"position_x":980,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P49","name":"Drawer front board","width":128,"height":518,"thickness":20,"material":"Sheet_Material","area":66304,"board_number":4,"position_x":1120,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P50","name":"Left side2","width":560,"height":850,"thickness":20,"material":"Oak (CPRTF8)","area":476000,"board_number":5,"position_x":0,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P51","name":"Left side2","width":560,"height":850,"thickness":20,"material":"Oak (CPRTF8)","area":476000,"board_number":5,"position_x":570,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P52","name":"Left side2","width":560,"height":850,"thickness":20,"material":"Oak (CPRTF8)","area":476000,"board_number":5,"position_x":1140,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P53","name":"Left side2","width":560,"height":850,"thickness":20,"material":"Oak (CPRTF8)","area":476000,"board_number":5,"position_x":1710,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P54","name":"Facadeaa","width":398,"height":298,"thickness":37.2,"material":"Oak (CPRTF8)","area":118604,"board_number":5,"position_x":0,"position_y":860,"rotated":"Yes","grain_direction":"any"},{"part_unique_id":"P55","name":"Facadeaa","width":398,"height":298,"thickness":37.2,"material":"Oak (CPRTF8)","area":118604,"board_number":5,"position_x":410,"position_y":860,"rotated":"Yes","grain_direction":"any"},{"part_unique_id":"P56","name":"Facadeaa","width":398,"height":298,"thickness":37.2,"material":"Oak (CPRTF8)","area":118604,"board_number":5,"position_x":820,"position_y":860,"rotated":"Yes","grain_direction":"any"},{"part_unique_id":"P57","name":"Facadea","width":398,"height":298,"thickness":37.2,"material":"Oak (CPRTF8)","area":118604,"board_number":5,"position_x":1230,"position_y":860,"rotated":"Yes","grain_direction":"any"},{"part_unique_id":"P58","name":"Facadea","width":398,"height":298,"thickness":37.2,"material":"Oak (CPRTF8)","area":118604,"board_number":5,"position_x":1640,"position_y":860,"rotated":"Yes","grain_direction":"any"},{"part_unique_id":"P59","name":"drawer facade","width":148,"height":598,"thickness":20,"material":"Oak (CPRTF8)","area":88504,"board_number":5,"position_x":2280,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P60","name":"drawer facade","width":148,"height":598,"thickness":20,"material":"Oak (CPRTF8)","area":88504,"board_number":5,"position_x":2280,"position_y":610,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P61","name":"Left side2","width":560,"height":850,"thickness":20,"material":"Oak (CPRTF8)","area":476000,"board_number":6,"position_x":0,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P62","name":"Left side2","width":560,"height":850,"thickness":20,"material":"Oak (CPRTF8)","area":476000,"board_number":6,"position_x":570,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P63","name":"Left side2","width":560,"height":850,"thickness":20,"material":"Oak (CPRTF8)","area":476000,"board_number":6,"position_x":1140,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P64","name":"Left side2","width":560,"height":850,"thickness":20,"material":"Oak (CPRTF8)","area":476000,"board_number":6,"position_x":1710,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P65","name":"Facadea","width":398,"height":298,"thickness":37.2,"material":"Oak (CPRTF8)","area":118604,"board_number":6,"position_x":0,"position_y":860,"rotated":"Yes","grain_direction":"any"},{"part_unique_id":"P66","name":"Facadea","width":398,"height":298,"thickness":37.2,"material":"Oak (CPRTF8)","area":118604,"board_number":6,"position_x":410,"position_y":860,"rotated":"Yes","grain_direction":"any"},{"part_unique_id":"P67","name":"Facadeaa","width":398,"height":298,"thickness":37.2,"material":"Oak (CPRTF8)","area":118604,"board_number":6,"position_x":820,"position_y":860,"rotated":"Yes","grain_direction":"any"},{"part_unique_id":"P68","name":"drawer facade","width":148,"height":598,"thickness":20,"material":"Oak (CPRTF8)","area":88504,"board_number":6,"position_x":2280,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P69","name":"drawer facade 2","width":148,"height":598,"thickness":20,"material":"Oak (CPRTF8)","area":88504,"board_number":6,"position_x":2280,"position_y":610,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P70","name":"drawer facade 2","width":148,"height":598,"thickness":20,"material":"Oak (CPRTF8)","area":88504,"board_number":7,"position_x":0,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P71","name":"drawer facade 2","width":148,"height":598,"thickness":20,"material":"Oak (CPRTF8)","area":88504,"board_number":7,"position_x":160,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P72","name":"drawer facade 2","width":148,"height":598,"thickness":20,"material":"Oak (CPRTF8)","area":88504,"board_number":7,"position_x":320,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P73","name":"drawer facade","width":148,"height":598,"thickness":20,"material":"Oak (CPRTF8)","area":88504,"board_number":7,"position_x":480,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P74","name":"Drawer back board2","width":128,"height":518,"thickness":20,"material":"Hardwood Plywood (4C2IOU)","area":66304,"board_number":8,"position_x":0,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P75","name":"Drawer back board2","width":128,"height":518,"thickness":20,"material":"Hardwood Plywood (4C2IOU)","area":66304,"board_number":8,"position_x":140,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P76","name":"Drawer back board2","width":128,"height":518,"thickness":20,"material":"Hardwood Plywood (4C2IOU)","area":66304,"board_number":8,"position_x":280,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P77","name":"Drawer back board2","width":128,"height":518,"thickness":20,"material":"Hardwood Plywood (4C2IOU)","area":66304,"board_number":8,"position_x":420,"position_y":0,"rotated":"No","grain_direction":"vertical"},{"part_unique_id":"P78","name":"Up board4","width":560,"height":560,"thickness":20,"material":"CHESTNUT_WOOD","area":313600,"board_number":9,"position_x":0,"position_y":0,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P79","name":"Up board4","width":560,"height":560,"thickness":20,"material":"CHESTNUT_WOOD","area":313600,"board_number":9,"position_x":570,"position_y":0,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P80","name":"Up board4","width":560,"height":560,"thickness":20,"material":"CHESTNUT_WOOD","area":313600,"board_number":9,"position_x":1140,"position_y":0,"rotated":"No","grain_direction":"any"},{"part_unique_id":"P81","name":"Up board4","width":560,"height":560,"thickness":20,"material":"CHESTNUT_WOOD","area":313600,"board_number":9,"position_x":1710,"position_y":0,"rotated":"No","grain_direction":"any"}],"unique_part_types":[{"name":"Drawer back board","width":128,"height":518,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","total_quantity":4,"total_area":265216.00000000006},{"name":"Drawer back board2","width":128,"height":518,"thickness":20,"material":"Hardwood Plywood (4C2IOU)","grain_direction":"vertical","total_quantity":4,"total_area":265216},{"name":"Drawer bottom board","width":519,"height":538,"thickness":10,"material":"Sheet_Material","grain_direction":"any","total_quantity":4,"total_area":1116888},{"name":"Drawer bottom board2","width":519,"height":538,"thickness":10,"material":"Sheet_Material","grain_direction":"any","total_quantity":4,"total_area":1116887.9999999995},{"name":"Drawer front board","width":128,"height":518,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","total_quantity":4,"total_area":265216.00000000006},{"name":"Drawer front board2","width":128,"height":518,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","total_quantity":4,"total_area":265216.00000000006},{"name":"Drawer left side board2","width":128,"height":539,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","total_quantity":4,"total_area":275968.00000000006},{"name":"Drawer right side board","width":128,"height":539,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","total_quantity":4,"total_area":275968.00000000006},{"name":"Drawer right side board2","width":128,"height":539,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","total_quantity":4,"total_area":275968.00000000006},{"name":"Facadea","width":398,"height":298,"thickness":37.2,"material":"Oak (CPRTF8)","grain_direction":"any","total_quantity":4,"total_area":474416.00000000023},{"name":"Facadeaa","width":398,"height":298,"thickness":37.2,"material":"Oak (CPRTF8)","grain_direction":"any","total_quantity":4,"total_area":474416.00000000023},{"name":"Left side2","width":560,"height":850,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","total_quantity":8,"total_area":3808000},{"name":"Left side4","width":560,"height":850,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","total_quantity":1,"total_area":476000},{"name":"Lower board`1","width":560,"height":560,"thickness":20,"material":"Sheet_Material","grain_direction":"any","total_quantity":4,"total_area":1254400},{"name":"Plinth``1","width":150,"height":600,"thickness":20,"material":"Sheet_Material","grain_direction":"vertical","total_quantity":4,"total_area":360000},{"name":"Shelf 1`1","width":490,"height":560,"thickness":20,"material":"Sheet_Material","grain_direction":"any","total_quantity":4,"total_area":1097600},{"name":"Shelf 2`1","width":490,"height":560,"thickness":20,"material":"Sheet_Material","grain_direction":"any","total_quantity":4,"total_area":1097600},{"name":"Up board4","width":560,"height":560,"thickness":20,"material":"CHESTNUT_WOOD","grain_direction":"any","total_quantity":4,"total_area":1254400},{"name":"drawer facade","width":148,"height":598,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","total_quantity":4,"total_area":354016.0000000003},{"name":"drawer facade 2","width":148,"height":598,"thickness":20,"material":"Oak (CPRTF8)","grain_direction":"vertical","total_quantity":4,"total_area":354016.0000000003}],"unique_board_types":[{"material":"CHESTNUT_WOOD","dimensions":"2440.0 x 1220.0mm","count":1,"total_area":2976800,"price_per_sheet":140,"total_cost":140},{"material":"Hardwood Plywood (4C2IOU)","dimensions":"2440.0 x 1220.0mm","count":1,"total_area":2976800,"price_per_sheet":0,"total_cost":0},{"material":"Oak (CPRTF8)","dimensions":"2440.0 x 1220.0mm","count":3,"total_area":8930400,"price_per_sheet":145,"total_cost":435},{"material":"Sheet_Material","dimensions":"2440.0 x 1220.0mm","count":4,"total_area":11907200,"price_per_sheet":0,"total_cost":0}],"boards":[{"board_number":1,"material":"Sheet_Material","stock_size":"2440.0mm x 1220.0mm","parts_count":9,"used_area":2468844,"waste_area":507956,"waste_percentage":17.06,"efficiency":82.94},{"board_number":2,"material":"Sheet_Material","stock_size":"2440.0mm x 1220.0mm","parts_count":12,"used_area":2542116,"waste_area":434684,"waste_percentage":14.6,"efficiency":85.4},{"board_number":3,"material":"Sheet_Material","stock_size":"2440.0mm x 1220.0mm","parts_count":19,"used_area":2535232,"waste_area":441568,"waste_percentage":14.83,"efficiency":85.17},{"board_number":4,"material":"Sheet_Material","stock_size":"2440.0mm x 1220.0mm","parts_count":9,"used_area":596736,"waste_area":2380064,"waste_percentage":79.95,"efficiency":20.049999999999997},{"board_number":5,"material":"Oak (CPRTF8)","stock_size":"2440.0mm x 1220.0mm","parts_count":11,"used_area":2674028,"waste_area":302772,"waste_percentage":10.17,"efficiency":89.83},{"board_number":6,"material":"Oak (CPRTF8)","stock_size":"2440.0mm x 1220.0mm","parts_count":9,"used_area":2436820,"waste_area":539980,"waste_percentage":18.14,"efficiency":81.86},{"board_number":7,"material":"Oak (CPRTF8)","stock_size":"2440.0mm x 1220.0mm","parts_count":4,"used_area":354016,"waste_area":2622784,"waste_percentage":88.11,"efficiency":11.89},{"board_number":8,"material":"Hardwood Plywood (4C2IOU)","stock_size":"2440.0mm x 1220.0mm","parts_count":4,"used_area":265216,"waste_area":2711584,"waste_percentage":91.09,"efficiency":8.909999999999997},{"board_number":9,"material":"CHESTNUT_WOOD","stock_size":"2440.0mm x 1220.0mm","parts_count":4,"used_area":1254400,"waste_area":1722400,"waste_percentage":57.86,"efficiency":42.14}],"summary":{"total_parts_instances":81,"total_unique_part_types":20,"total_boards":9,"total_stock_area":26791200,"total_used_area":15127408,"total_waste_area":11663792,"overall_waste_percentage":43.54,"overall_efficiency":56.46,"total_project_cost":575}};
+        function renderDiagrams() {
+    const container = document.getElementById('diagramsContainer');
+    container.innerHTML = '';
+
+    if (!g_boardsData || g_boardsData.length === 0) {
+        container.innerHTML = '<p>No cutting diagrams to display.</p>';
+        return;
+    }
+
+    g_boardsData.forEach((board, boardIndex) => {
+        const card = document.createElement('div');
+        card.className = 'diagram-card';
+
+        const title = document.createElement('h3');
+        title.textContent = `${board.material} Board ${boardIndex + 1}`;
+        title.id = `diagram-${board.material.replace(/[^a-zA-Z0-9]/g, '_')}-${boardIndex}`;
+        card.appendChild(title);
+
+        const info = document.createElement('p');
+        info.innerHTML = `Size: ${board.stock_width.toFixed(1)}x${board.stock_height.toFixed(1)}mm<br>
+                          Waste: ${board.waste_percentage.toFixed(1)}% (Efficiency: ${board.efficiency_percentage.toFixed(1)}%)`;
+        card.appendChild(info);
+
+    // create canvas and an overlay canvas for highlighting
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'relative';
+    wrapper.style.display = 'inline-block';
+    const canvas = document.createElement('canvas');
+    canvas.className = 'diagram-canvas';
+    canvas.style.display = 'block';
+    canvas.style.position = 'relative';
+    const overlay = document.createElement('canvas');
+    overlay.className = 'diagram-overlay';
+    overlay.style.position = 'absolute';
+    overlay.style.top = '0'; overlay.style.left = '0';
+    overlay.style.pointerEvents = 'none';
+    wrapper.appendChild(canvas);
+    wrapper.appendChild(overlay);
+    card.appendChild(wrapper);
+
+        container.appendChild(card);
+
+        const ctx = canvas.getContext('2d');
+        const padding = 40;
+        const maxCanvasDim = 600;
+        const scale = Math.min(
+            (maxCanvasDim - 2 * padding) / board.stock_width,
+            (maxCanvasDim - 2 * padding) / board.stock_height
+        );
+
+    canvas.width = Math.round(board.stock_width * scale + 2 * padding);
+    canvas.height = Math.round(board.stock_height * scale + 2 * padding);
+    overlay.width = canvas.width; overlay.height = canvas.height;
+
+        ctx.fillStyle = '#f5f5f5';
+        ctx.fillRect(padding, padding, board.stock_width * scale, board.stock_height * scale);
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(padding, padding, board.stock_width * scale, board.stock_height * scale);
+        
+        ctx.fillStyle = '#333';
+        ctx.font = `${Math.max(12, 14 * scale)}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.fillText(`${board.stock_width.toFixed(0)}mm`, padding + (board.stock_width * scale) / 2, padding - 5);
+        
+        ctx.save();
+        ctx.translate(padding - 15, padding + (board.stock_height * scale) / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText(`${board.stock_height.toFixed(0)}mm`, 0, 0);
+        ctx.restore();
+
+        const parts = board.parts || [];
+        parts.forEach((part, partIndex) => {
+            const partX = padding + part.x * scale;
+            const partY = padding + part.y * scale;
+            const partWidth = part.width * scale;
+            const partHeight = part.height * scale;
+
+            ctx.fillStyle = getMaterialColor(part.material);
+            ctx.fillRect(partX, partY, partWidth, partHeight);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(partX, partY, partWidth, partHeight);
+
+            canvas.partData = canvas.partData || [];
+            canvas.partData.push({
+                x: partX, y: partY, width: partWidth, height: partHeight,
+                part: part, boardIndex: boardIndex
+            });
+            // attach overlay context for later highlighting
+            canvas.overlayCanvas = overlay;
+            canvas.overlayCtx = overlay.getContext('2d');
+
+            if (partWidth > 30 && partHeight > 20) {
+                // Larger, centered white labels for readability
+                ctx.fillStyle = '#ffffff';
+                ctx.font = `bold ${Math.max(12, 14 * scale)}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const labelContent = String(part.instance_id || `P${partIndex + 1}`);
+                const maxChars = Math.max(6, Math.floor(partWidth / 8));
+                const displayLabel = labelContent.length > maxChars ? labelContent.slice(0, maxChars - 1) + '…' : labelContent;
+                ctx.fillText(displayLabel, partX + partWidth / 2, partY + partHeight / 2);
+            }
+
+            if (partWidth > 50) {
+                ctx.fillStyle = '#ffffff';
+                ctx.font = `${Math.max(10, 11 * scale)}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.fillText(`${Math.round(part.width)}mm`, partX + partWidth / 2, partY + 5);
+            }
+
+            if (partHeight > 50) {
+                ctx.save();
+                ctx.translate(partX + 5, partY + partHeight / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = `${Math.max(10, 11 * scale)}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.fillText(`${Math.round(part.height)}mm`, 0, 0);
+                ctx.restore();
+            }
+        });
+
+    canvas.addEventListener('click', (e) => handleCanvasClick(e, canvas));
+    canvas.addEventListener('mousemove', (e) => handleCanvasHover(e, canvas));
+        canvas.style.cursor = 'pointer';
+    });
+}
+function renderReport() {
+    if (!g_reportData) return;
+
+    const summaryTable = document.getElementById('summaryTable');
+    summaryTable.innerHTML = `
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Total Parts Instances</td><td>${g_reportData.summary.total_parts_instances || 0}</td></tr>
+        <tr><td>Total Unique Part Types</td><td>${g_reportData.summary.total_unique_part_types || 0}</td></tr>
+        <tr><td>Total Boards</td><td>${g_reportData.summary.total_boards || 0}</td></tr>
+        <tr><td>Overall Efficiency</td><td>${(g_reportData.summary.overall_efficiency || 0).toFixed(2)}%</td></tr>
+        <tr><td><strong>Total Project Cost</strong></td><td class="total-highlight"><strong>$${(g_reportData.summary.total_project_cost || 0).toFixed(2)}</strong></td></tr>
+    `;
+
+    const materialsContainer = document.getElementById('materialsContainer');
+    if (materialsContainer && g_reportData.unique_board_types) {
+        materialsContainer.innerHTML = g_reportData.unique_board_types.map((board_type, index) => `
+            <div class="material-item" onclick="scrollToDiagram('${board_type.material}')" style="cursor: pointer;">
+                <div class="material-swatch" style="background: ${getMaterialColor(board_type.material)}"></div>
+                <span class="material-name">${board_type.material}</span>
+                <span class="material-price">Price: $${(board_type.price_per_sheet || 0).toFixed(2)}</span>
+            </div>
+        `).join('');
+    }
+
+    const uniquePartTypesTable = document.getElementById('uniquePartTypesTable');
+    if (uniquePartTypesTable) {
+        uniquePartTypesTable.innerHTML = `
+            <tr><th>Name</th><th>W (mm)</th><th>H (mm)</th><th>Thick (mm)</th><th>Material</th><th>Grain</th><th>Total Qty</th><th>Total Area (m²)</th></tr>
+        `;
+        if (g_reportData.unique_part_types) {
+            g_reportData.unique_part_types.forEach(part_type => {
+                uniquePartTypesTable.innerHTML += `
+                    <tr>
+                        <td>${part_type.name}</td>
+                        <td>${part_type.width.toFixed(2)}</td>
+                        <td>${part_type.height.toFixed(2)}</td>
+                        <td>${part_type.thickness.toFixed(2)}</td>
+                        <td>${part_type.material}</td>
+                        <td>${part_type.grain_direction}</td>
+                        <td class="total-highlight">${part_type.total_quantity}</td>
+                        <td>${(part_type.total_area / 1000000).toFixed(3)}</td>
+                    </tr>
+                `;
+            });
+        }
+    }
+
+    const uniqueBoardTypesTable = document.getElementById('uniqueBoardTypesTable');
+    if (uniqueBoardTypesTable) {
+        uniqueBoardTypesTable.innerHTML = `
+            <tr><th>Material</th><th>Dimensions</th><th>Count</th><th>Total Area (m²)</th><th>Price/Sheet</th><th>Total Cost</th></tr>
+        `;
+        if (g_reportData.unique_board_types) {
+            g_reportData.unique_board_types.forEach(board_type => {
+                uniqueBoardTypesTable.innerHTML += `
+                    <tr>
+                        <td>${board_type.material}</td>
+                        <td>${board_type.dimensions}</td>
+                        <td class="total-highlight">${board_type.count}</td>
+                        <td>${(board_type.total_area / 1000000).toFixed(3)}</td>
+                        <td>$${(board_type.price_per_sheet || 0).toFixed(2)}</td>
+                        <td class="total-highlight">$${(board_type.total_cost || 0).toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+        }
+    }
+
+    const boardsTable = document.getElementById('boardsTable');
+    boardsTable.innerHTML = `
+        <tr><th>Board#</th><th>Material</th><th>Size</th><th>Parts</th><th>Efficiency</th></tr>
+    `;
+    if (g_reportData.boards) {
+        g_reportData.boards.forEach(board => {
+            boardsTable.innerHTML += `
+                <tr>
+                    <td>${board.board_number}</td>
+                    <td>${board.material}</td>
+                    <td>${board.stock_size}</td>
+                    <td class="total-highlight">${board.parts_count}</td>
+                    <td>${board.efficiency.toFixed(2)}%</td>
+                </tr>
+            `;
+        });
+    }
+
+    const partsTable = document.getElementById('partsTable');
+    partsTable.innerHTML = `
+        <tr><th>Unique ID</th><th>Name</th><th>Dimensions</th><th>Material</th><th>Board#</th></tr>
+    `;
+    const parts_list = g_reportData.parts_placed || g_reportData.parts || [];
+    parts_list.forEach(part => {
+        const pid = part.part_unique_id || part.part_number || '';
+        partsTable.innerHTML += `
+            <tr data-part-id="${pid}" class="part-row">
+                <td>${pid}</td>
+                <td>${part.name}</td>
+                <td>${part.width.toFixed(0)} × ${part.height.toFixed(0)}mm</td>
+                <td>${part.material}</td>
+                <td>${part.board_number}</td>
+            </tr>
+        `;
+    });
+    // delegate click events on parts table to highlight the corresponding part on diagrams
+    partsTable.addEventListener('click', function(ev){
+        const tr = ev.target.closest && ev.target.closest('tr[data-part-id]');
+        if (!tr) return;
+        const id = tr.getAttribute('data-part-id');
+        if (!id) return;
+        highlightPartByInstanceId(id);
+    });
+}
+function getMaterialColor(material) {
+    let hash = 0;
+    for (let i = 0; i < material.length; i++) {
+        hash = material.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue}, 45%, 65%)`;
+}
+function getMaterialTexture(material) {
+    if (material.toLowerCase().includes('wood') || material.toLowerCase().includes('chestnut')) {
+        return 'repeating-linear-gradient(45deg, #8B4513, #8B4513 2px, #A0522D 2px, #A0522D 4px)';
+    } else if (material.includes('240,240,240')) {
+        return 'repeating-linear-gradient(90deg, #f0f0f0, #f0f0f0 3px, #e0e0e0 3px, #e0e0e0 6px)';
+    }
+    return getMaterialColor(material);
+}
+function scrollToDiagram(material) {
+        const sanitizedMaterial = material.replace(/[^a-zA-Z0-9]/g, '_');
+        const diagrams = document.querySelectorAll(`[id^="diagram-${sanitizedMaterial}-"]`);
+        if (diagrams.length > 0) {
+            diagrams[0].style.scrollMarginTop = '20px';
+            diagrams[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setTimeout(() => diagrams[0].style.scrollMarginTop = '', 800);
+        }
+    }
+function handleCanvasClick(e, canvas) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    if (canvas.partData) {
+        for (let partData of canvas.partData) {
+            if (x >= partData.x && x <= partData.x + partData.width &&
+                y >= partData.y && y <= partData.y + partData.height) {
+                showPartModal(partData.part);
+                break;
+            }
+        }
+    }
+}
+function handleCanvasHover(e, canvas) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    let hovering = false;
+    if (canvas.partData) {
+        for (let partData of canvas.partData) {
+            if (x >= partData.x && x <= partData.x + partData.width &&
+                y >= partData.y && y <= partData.y + partData.height) {
+                hovering = true;
+                break;
+            }
+        }
+    }
+    canvas.style.cursor = hovering ? 'pointer' : 'default';
+}
+function showPartModal(part) {
+    const modal = document.getElementById('partModal');
+    const modalCanvas = document.getElementById('modalCanvas');
+    const modalInfo = document.getElementById('modalInfo');
+    
+    initThreeJS(part, modalCanvas);
+    setupOrbitControls();
+    
+    modalInfo.innerHTML = `
+        <h3>${part.name}</h3>
+        <p><strong>Dimensions:</strong> ${part.width.toFixed(1)} × ${part.height.toFixed(1)} × ${part.thickness.toFixed(1)}mm</p>
+        <p><strong>Area:</strong> ${(part.width * part.height / 1000000).toFixed(3)} m²</p>
+        <p><strong>Material:</strong> ${part.material}</p>
+        <p><strong>Grain Direction:</strong> ${part.grain_direction || 'Any'}</p>
+        <p><strong>Rotated:</strong> ${part.rotated ? 'Yes' : 'No'}</p>
+        <p style="color: #666; font-size: 12px;">Left drag: orbit | Middle/Shift+Left drag: pan | Scroll: zoom</p>
+    `;
+    
+    document.getElementById('projectionToggle').onclick = () => {
+        isOrthographic = !isOrthographic;
+        document.getElementById('projectionToggle').textContent = isOrthographic ? 'Perspective' : 'Orthographic';
+        
+        if (isOrthographic) {
+            const distance = camera.position.distanceTo(controls.target);
+            camera = new THREE.OrthographicCamera(-distance, distance, distance, -distance, 0.1, 1000);
+        } else {
+            camera = new THREE.PerspectiveCamera(75, renderer.domElement.width / renderer.domElement.height, 0.1, 1000);
+        }
+        camera.position.set(5, 5, 5);
+        controls.object = camera;
+    };
+    
+    currentPart = part;
+    modal.style.display = 'block';
+    animate();
+}
+function initThreeJS(part, canvas) {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf0f0f0);
+    
+    camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
+    camera.position.set(5, 5, 5);
+    
+    renderer = new THREE.WebGLRenderer({ canvas: canvas });
+    renderer.setSize(canvas.width, canvas.height);
+    
+    const w = part.width / 100;
+    const h = part.height / 100; 
+    const d = part.thickness / 100;
+    
+    const geometry = new THREE.BoxGeometry(w, h, d);
+    const material = new THREE.MeshBasicMaterial({ color: 0x74b9ff });
+    cube = new THREE.Mesh(geometry, material);
+    
+    const edges = new THREE.EdgesGeometry(geometry);
+    const edgeMaterial = new THREE.LineBasicMaterial({ color: 0x333333, linewidth: 1 });
+    const wireframe = new THREE.LineSegments(edges, edgeMaterial);
+    
+    scene.add(cube);
+    scene.add(wireframe);
+}
+function setupOrbitControls() {
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.25;
+    controls.enableZoom = true;
+    controls.enablePan = true;
+    controls.enableRotate = true;
+    controls.minDistance = 1;
+    controls.maxDistance = 50;
+}
+function animate() {
+    if (!renderer || !scene || !camera) return;
+    
+    controls.update();
+    renderer.render(scene, camera);
+    
+    if (document.getElementById('partModal').style.display === 'block') {
+        requestAnimationFrame(animate);
+    }
+}
+function initResizer() {
+    const resizer = document.getElementById('resizer');
+    const leftSide = document.getElementById('diagramsContainer');
+    const rightSide = document.getElementById('reportContainer');
+    
+    if (!resizer || !leftSide || !rightSide || resizerInitialized) return;
+    
+    let isResizing = false;
+    resizerInitialized = true;
+    
+    resizer.style.cursor = 'col-resize';
+    
+    function handleMouseMove(e) {
+        if (!isResizing) return;
+        e.preventDefault();
+        
+        const container = document.querySelector('.container');
+        const containerRect = container.getBoundingClientRect();
+        const leftWidth = e.clientX - containerRect.left;
+        const totalWidth = containerRect.width;
+        const leftPercent = (leftWidth / totalWidth) * 100;
+        const rightPercent = 100 - leftPercent;
+        
+        if (leftPercent > 15 && rightPercent > 25) {
+            leftSide.style.flex = `0 0 ${leftPercent}%`;
+            rightSide.style.flex = `0 0 ${rightPercent}%`;
+        }
+    }
+    
+    function handleMouseUp() {
+        isResizing = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        resizer.style.cursor = 'col-resize';
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+    }
+    
+    resizer.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        isResizing = true;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    });
+    
+    resizer.addEventListener('mouseenter', () => {
+        if (!isResizing) {
+            resizer.style.cursor = 'col-resize';
+        }
+    });
+}
+        // --- Highlighting helpers: overlay drawing and part lookup ---
+        function clearAllOverlays(){
+            const overlays = document.querySelectorAll('.diagram-overlay');
+            overlays.forEach(o => { const ctx = o.getContext('2d'); ctx.clearRect(0,0,o.width,o.height); });
+        }
+
+        function highlightPartByInstanceId(id){
+            if (!id) return;
+            clearAllOverlays();
+            const canvases = document.querySelectorAll('.diagram-canvas');
+            for (let i=0;i<canvases.length;i++){
+                const c = canvases[i];
+                const data = c.partData || [];
+                for (let pd of data){
+                    const part = pd.part || {};
+                    const instanceId = part.instance_id || part.part_unique_id || part.part_number || '';
+                    if (String(instanceId) === String(id)){
+                        const oc = c.overlayCtx;
+                        if (!oc) continue;
+                        const x = Math.round(pd.x - 6);
+                        const y = Math.round(pd.y - 6);
+                        const w = Math.round(pd.width + 12);
+                        const h = Math.round(pd.height + 12);
+                        oc.clearRect(0,0,c.overlayCanvas.width, c.overlayCanvas.height);
+                        oc.save();
+                        oc.shadowBlur = 18; oc.shadowColor = 'rgba(43,110,246,0.28)';
+                        oc.fillStyle = 'rgba(43,110,246,0.10)';
+                        oc.strokeStyle = 'rgba(43,110,246,0.95)';
+                        oc.lineWidth = 6;
+                        oc.fillRect(x,y,w,h);
+                        oc.strokeRect(x,y,w,h);
+                        oc.restore();
+                        // also scroll the diagram card into view
+                        try { c.closest('.diagram-card').scrollIntoView({ behavior:'smooth', block:'center' }); } catch(e){}
+                        return; // highlight the first match and exit
+                    }
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderDiagrams();
+            renderReport();
+            const modal = document.getElementById('partModal');
+            const closeBtn = document.querySelector('.close');
+            if (closeBtn) closeBtn.addEventListener('click', () => modal.style.display = 'none');
+            window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+            initResizer();
+        });
+    </script>
+                <!-- Annotation system script -->
+                <script>
+                (function(){
+                    function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+                    const tt = document.createElement('div'); tt.className='annot-tooltip'; document.body.appendChild(tt);
+                    const legend = document.createElement('aside'); legend.className='annotation-legend'; legend.innerHTML = '<div class="legend-header"><div class="title">Report callouts</div><button class="toggle">–</button></div><div class="list"></div>'; document.body.appendChild(legend);
+                    const minimized = document.createElement('div'); minimized.className = 'annotation-minimized'; minimized.textContent = 'A'; document.body.appendChild(minimized);
+                    // Track currently highlighted element
+                    let currentHighlightEl = null;
+
+                    // Toggle collapse/expand for legend
+                    const toggleBtn = legend.querySelector('.toggle');
+                    function collapseLegend(){ legend.style.display = 'none'; minimized.style.display = 'flex'; }
+                    function expandLegend(){ legend.style.display = 'block'; minimized.style.display = 'none'; }
+                    toggleBtn.addEventListener('click', function(){ collapseLegend(); });
+                    minimized.addEventListener('click', function(){ expandLegend(); });
+
+                            function placeBadge(badge, el){
+                                const r = el.getBoundingClientRect();
+                                let top = window.scrollY + r.top - 12;
+                                let left = window.scrollX + r.left + r.width - 12;
+                                // keep badges inside viewport
+                                left = clamp(left, 8, window.scrollX + window.innerWidth - 36);
+                                top = clamp(top, window.scrollY + 8, window.scrollY + window.innerHeight - 36);
+                                badge.style.top = Math.round(top) + 'px'; badge.style.left = Math.round(left) + 'px';
+                            }
+
+                            // place badge anchored to the left side of the element (for callouts 2-5)
+                            function placeBadgeLeft(badge, el){
+                                const r = el.getBoundingClientRect();
+                                const badgeWidth = badge.offsetWidth || 32;
+                                let top = window.scrollY + r.top + (r.height/2) - (badge.offsetHeight ? badge.offsetHeight/2 : 14);
+                                let left = window.scrollX + r.left - badgeWidth - 12; // left of element
+                                // clamp to viewport
+                                left = clamp(left, window.scrollX + 8, window.scrollX + window.innerWidth - badgeWidth - 8);
+                                top = clamp(top, window.scrollY + 8, window.scrollY + window.innerHeight - 36);
+                                badge.style.top = Math.round(top) + 'px'; badge.style.left = Math.round(left) + 'px';
+                                badge.classList.add('anchored-left');
+                            }
+
+                    // Improved tooltip placement to avoid overflow
+                            function showTooltipAt(elemRect, html){
+                                tt.innerHTML = html;
+                                tt.style.display = 'block';
+                                tt.classList.add('open');
+                                // measure
+                                const pad = 12;
+                                const ttRect = tt.getBoundingClientRect();
+                                let top = window.scrollY + elemRect.bottom + 8;
+                                let left = window.scrollX + elemRect.left;
+                                // if overflow right, move left
+                                if (left + ttRect.width + pad > window.scrollX + window.innerWidth) {
+                                    left = window.scrollX + window.innerWidth - ttRect.width - pad;
+                                }
+                                // if overflow bottom, show above
+                                if (top + ttRect.height + pad > window.scrollY + window.innerHeight) {
+                                    top = window.scrollY + elemRect.top - ttRect.height - 8;
+                                }
+                                left = clamp(left, window.scrollX + 8, window.scrollX + window.innerWidth - ttRect.width - 8);
+                                tt.style.top = Math.round(top) + 'px'; tt.style.left = Math.round(left) + 'px';
+                            }
+
+                            Array.from(document.querySelectorAll('[data-annot]')).forEach(function(el){
+                        const text = el.getAttribute('data-annot');
+                        const icon = document.createElement('span'); icon.className='annot-icon'; icon.textContent='i';
+                        el.parentNode.insertBefore(icon, el.nextSibling);
+                        icon.addEventListener('mouseenter', function(){ const rect = icon.getBoundingClientRect(); showTooltipAt(rect, text); });
+                        icon.addEventListener('mouseleave', function(){ tt.style.display='none'; });
+                        // inline note toggle on click (visible in print)
+                        const note = document.createElement('span'); note.className='annot-inline-note'; note.textContent = text; note.style.display='none'; icon.parentNode.insertBefore(note, icon.nextSibling);
+                        icon.addEventListener('click', function(){ note.style.display = (note.style.display === 'none') ? 'inline-block' : 'none'; });
+                    });
+                            // ensure tooltip open class is removed when hidden
+                            const hideTooltip = function(){ tt.classList.remove('open'); tt.style.display = 'none'; };
+
+                    const callouts = Array.from(document.querySelectorAll('[data-callout]'));
+                    if (callouts.length){
+                        legend.style.display='block'; const list = legend.querySelector('.list');
+                        callouts.forEach(function(el, idx){
+                            const raw = el.getAttribute('data-callout') || ''; const parts = raw.split('||'); const title = (parts[0]||'').trim(); const desc = (parts[1]||'').trim(); const num = idx + 1;
+                            const badge = document.createElement('span'); badge.className='annot-badge'; badge.textContent = num; document.body.appendChild(badge);
+                            // For callouts 2..5 anchor badges to the left to avoid right-corner congestion
+                            const anchorLeft = (num >= 2 && num <= 5);
+                            function pos(){ if (anchorLeft) placeBadgeLeft(badge, el); else placeBadge(badge, el); }
+                            pos(); window.addEventListener('scroll', pos); window.addEventListener('resize', pos);
+                            badge.addEventListener('click', function(){
+                                // toggle highlight on the target element
+                                try {
+                                    if (currentHighlightEl === el) {
+                                        el.classList.remove('annot-highlight');
+                                        el.classList.remove('element-inspector-highlight');
+                                        currentHighlightEl = null;
+                                    } else {
+                                        if (currentHighlightEl) { currentHighlightEl.classList.remove('annot-highlight'); currentHighlightEl.classList.remove('element-inspector-highlight'); }
+                                        el.classList.add('annot-highlight');
+                                        el.classList.add('element-inspector-highlight');
+                                        currentHighlightEl = el;
+                                        // bring it into view but avoid jarring scroll if already visible
+                                        try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+                                    }
+                                } catch (e) { /* ignore */ }
+                                const rect = badge.getBoundingClientRect();
+                                showTooltipAt(rect, '<strong style="display:block;margin-bottom:6px">'+(title||('Callout '+num))+'</strong>' + (desc||''));
+                            });
+                            // add to legend list
+                            const item = document.createElement('div'); item.className='item';
+                            item.innerHTML = '<div class="num">'+num+'</div><div class="txt"><strong>' + (title||('Callout '+num)) + '</strong><div style="margin-top:6px;color:#5b4b3a">' + (desc||'') + '</div></div>';
+                            list.appendChild(item);
+                        });
+                    }
+
+                      document.addEventListener('click', function(e){
+                                        const clickedBadgeOrIcon = e.target.classList && (e.target.classList.contains('annot-icon') || e.target.classList.contains('annot-badge'));
+                                        const clickedInLegend = e.target.closest && e.target.closest('.annotation-legend');
+                                        if (!clickedBadgeOrIcon && !clickedInLegend) {
+                                            hideTooltip();
+                                            if (currentHighlightEl) { currentHighlightEl.classList.remove('annot-highlight'); currentHighlightEl.classList.remove('element-inspector-highlight'); currentHighlightEl = null; }
+                                        }
+                                    });
+                })();
+                </script>
+</body>
+</html>
