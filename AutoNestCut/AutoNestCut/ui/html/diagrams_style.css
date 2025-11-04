@@ -593,7 +593,161 @@ h2 {
     border-bottom: 1px solid #ddd;
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
+    gap: 15px;
+    align-items: center;
+}
+
+/* Icon export buttons - COMPACT SIZE */
+.icon-export-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: linear-gradient(180deg, #0078D4 0%, #106EBE 100%) !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 12px !important;
+    border-radius: 6px !important;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    min-width: 55px;
+    box-shadow: 0 2px 6px rgba(0, 120, 212, 0.15);
+    margin-left: 0 !important;
+}
+
+.icon-export-btn:hover {
+    background: linear-gradient(180deg, #106EBE 0%, #0078D4 100%) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 120, 212, 0.25);
+    filter: none !important;
+}
+
+.icon-export-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0, 120, 212, 0.15);
+}
+
+.export-icon {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.export-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    line-height: 1;
+}
+
+/* Compact icon buttons for config section */
+.icon-btn-compact {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 12px !important;
+    min-width: 60px;
+    font-size: 11px;
+    margin-left: 8px !important;
+}
+
+.compact-icon {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Material control buttons */
+.materials-controls-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.materials-action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.material-icon-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: linear-gradient(180deg, #0078D4 0%, #106EBE 100%) !important;
+    color: white !important;
+    border: none !important;
+    padding: 7px 10px !important;
+    border-radius: 6px !important;
+    cursor: pointer;
+    font-size: 9px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    min-width: 50px;
+    box-shadow: 0 2px 6px rgba(0, 120, 212, 0.15);
+    margin-left: 0 !important;
+}
+
+.material-icon-btn:hover {
+    background: linear-gradient(180deg, #106EBE 0%, #0078D4 100%) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 120, 212, 0.25);
+    filter: none !important;
+}
+
+.material-icon-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0, 120, 212, 0.15);
+}
+
+.material-icon {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.materials-sort-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.sort-select {
+    padding: 7px 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 12px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sort-select:hover {
+    border-color: #0078D4;
+    box-shadow: 0 2px 6px rgba(0, 120, 212, 0.1);
+}
+
+.materials-filter-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
 }
 
 /* Resizer improvements */

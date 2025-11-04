@@ -17,7 +17,7 @@ module AutoNestCut
       [bounds.width.to_mm, bounds.height.to_mm, bounds.depth.to_mm]
     end
     
-    def self.is_sheet_good?(bounds, min_thickness = 3, max_thickness = 50, min_area = 10000)
+    def self.is_sheet_good?(bounds, min_thickness = 3, max_thickness = 100, min_area = 1000)
       dimensions = get_dimensions(bounds).sort
       thickness = dimensions[0]
       width = dimensions[1]

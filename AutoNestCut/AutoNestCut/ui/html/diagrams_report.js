@@ -1272,20 +1272,16 @@ function scrollToPieceDiagram(partId, boardNumber) {
 function highlightPieceOnCanvas(canvas, partData) {
     // Redraw the canvas with the piece highlighted
     const ctx = canvas.getContext('2d');
-    
+
     // Store original drawing function if not already stored
     if (!canvas.originalDraw) {
         canvas.originalDraw = canvas.toDataURL();
     }
-    
-    // Add a visual highlight by drawing a glowing border around the piece
-    ctx.strokeStyle = '#FF6B6B';
-    ctx.lineWidth = 4;
-    ctx.shadowColor = 'rgba(255, 107, 107, 0.8)';
-    ctx.shadowBlur = 15;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
-    
+
+    // Add a visual highlight by drawing a border around the piece
+    ctx.strokeStyle = '#007bff';
+    ctx.lineWidth = 3;
+
     // Draw highlight border
     ctx.strokeRect(
         partData.x - 2,
@@ -1293,10 +1289,6 @@ function highlightPieceOnCanvas(canvas, partData) {
         partData.width + 4,
         partData.height + 4
     );
-    
-    // Reset shadow
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
 }
 
 function clearPieceHighlight() {
@@ -1484,45 +1476,61 @@ document.addEventListener('DOMContentLoaded', () => {
     const partModal = document.getElementById('partModal');
     const previewModal = document.getElementById('previewModal');
     const closeButtons = document.querySelectorAll('.close');
-    
+
     closeButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
             if (e.target.closest('#partModal')) {
-                partModal.style.display = 'none';
+                if (partModal) partModal.style.display = 'none';
             } else if (e.target.closest('#previewModal')) {
-                previewModal.style.display = 'none';
+                if (previewModal) previewModal.style.display = 'none';
             }
         });
     });
-    
+
     window.addEventListener('click', (e) => {
-        if (e.target === partModal) {
+        if (partModal && e.target === partModal) {
             partModal.style.display = 'none';
         }
-        if (e.target === previewModal) {
+        if (previewModal && e.target === previewModal) {
             previewModal.style.display = 'none';
         }
     });
-    
+
     // Setup export button handlers
-    document.getElementById('printButton').addEventListener('click', () => {
-        showExportPreview('pdf');
-    });
-    
-    document.getElementById('exportCsvButton').addEventListener('click', () => {
-        showExportPreview('csv');
-    });
-    
-    document.getElementById('exportHtmlButton').addEventListener('click', () => {
-        showExportPreview('html');
-    });
-    
+    const printBtn = document.getElementById('printButton');
+    if (printBtn) {
+        printBtn.addEventListener('click', () => {
+            showExportPreview('pdf');
+        });
+    }
+
+    const exportCsvBtn = document.getElementById('exportCsvButton');
+    if (exportCsvBtn) {
+        exportCsvBtn.addEventListener('click', () => {
+            showExportPreview('csv');
+        });
+    }
+
+    const exportHtmlBtn = document.getElementById('exportHtmlButton');
+    if (exportHtmlBtn) {
+        exportHtmlBtn.addEventListener('click', () => {
+            showExportPreview('html');
+        });
+    }
+
     // Setup preview modal buttons
-    document.getElementById('confirmExportBtn').addEventListener('click', confirmExport);
-    document.getElementById('cancelExportBtn').addEventListener('click', () => {
-        previewModal.style.display = 'none';
-        pendingExportType = null;
-    });
+    const confirmExportBtn = document.getElementById('confirmExportBtn');
+    if (confirmExportBtn) {
+        confirmExportBtn.addEventListener('click', confirmExport);
+    }
+
+    const cancelExportBtn = document.getElementById('cancelExportBtn');
+    if (cancelExportBtn && previewModal) {
+        cancelExportBtn.addEventListener('click', () => {
+            previewModal.style.display = 'none';
+            pendingExportType = null;
+        });
+    }
 
     initResizer();
     setTimeout(() => {

@@ -41,18 +41,64 @@
             
             <div class="section">
                 <h2>Stock Materials & Pricing</h2>
-                <div class="materials-controls">
-                    <button type="button" onclick="addMaterial()">Add Material</button>
-                    <button type="button" onclick="loadDefaults()">Load Defaults</button>
-                    <button type="button" onclick="importCSV()">Import CSV</button>
-                    <button type="button" onclick="exportDatabase()">Export Database</button>
-                    <select id="sortBy" onchange="displayMaterials()">
-                        <option value="alphabetical">Sort: A-Z</option>
-                        <option value="usage">Sort: Used First</option>
-                        <option value="mostUsed">Sort: Most Used</option>
-                    </select>
-                    <button type="button" id="foldToggle" onclick="toggleFold()">Show Used Only</button>
-                    <button type="button" onclick="clearHighlight()" class="clear-highlight-btn">Clear Highlight</button>
+                <div class="materials-controls-group">
+                    <div class="materials-action-buttons">
+                        <button type="button" onclick="addMaterial()" class="material-icon-btn" title="Add Material">
+                            <svg class="material-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            <span>Add</span>
+                        </button>
+                        <button type="button" onclick="loadDefaults()" class="material-icon-btn" title="Load Defaults">
+                            <svg class="material-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                                <path d="M21 3v5h-5"></path>
+                                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                                <path d="M3 21v-5h5"></path>
+                            </svg>
+                            <span>Defaults</span>
+                        </button>
+                        <button type="button" onclick="importCSV()" class="material-icon-btn" title="Import CSV">
+                            <svg class="material-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <span>Import</span>
+                        </button>
+                        <button type="button" onclick="exportDatabase()" class="material-icon-btn" title="Export Database">
+                            <svg class="material-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            <span>Export</span>
+                        </button>
+                    </div>
+                    <div class="materials-sort-controls">
+                        <select id="sortBy" onchange="displayMaterials()" class="sort-select">
+                            <option value="alphabetical">Sort: A-Z</option>
+                            <option value="usage">Sort: Used First</option>
+                            <option value="mostUsed">Sort: Most Used</option>
+                        </select>
+                    </div>
+                    <div class="materials-filter-buttons">
+                        <button type="button" id="foldToggle" onclick="toggleFold()" class="material-icon-btn" title="Show Used Only">
+                            <svg class="material-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <span>Used Only</span>
+                        </button>
+                        <button type="button" onclick="clearHighlight()" class="material-icon-btn" title="Clear Highlight">
+                            <svg class="material-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
+                            <span>Clear</span>
+                        </button>
+                    </div>
                 </div>
                 <div class="materials-header">
                     <span>Material Name</span>
@@ -75,20 +121,39 @@
     <!-- Report Tab -->
     <div id="reportTabContent" class="tab-content">
         <div class="report-header">
-            <button id="printButton">Print / Save as PDF</button>
-            <button id="exportCsvButton">Export CSV Report</button>
-            <button id="exportHtmlButton">Export Interactive HTML</button>
+            <button id="printButton" class="icon-export-btn" title="Print / Save as PDF">
+                <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                <span class="export-label">PDF</span>
+            </button>
+            <button id="exportCsvButton" class="icon-export-btn" title="Export CSV Report">
+                <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                    <polyline points="13 2 13 9 20 9"></polyline>
+                    <line x1="9" y1="13" x2="15" y2="13"></line>
+                    <line x1="9" y1="17" x2="15" y2="17"></line>
+                </svg>
+                <span class="export-label">CSV</span>
+            </button>
+            <button id="exportHtmlButton" class="icon-export-btn" title="Export Interactive HTML">
+                <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+                <span class="export-label">HTML</span>
+            </button>
         </div>
 
         <div class="container">
             <div id="diagramsContainer" class="diagrams-container">
+                <h2>Diagrams</h2>
                 <p>Generate a report to view diagrams...</p>
             </div>
             <div class="resizer" id="resizer"></div>
             <div id="reportContainer" class="report-container">
                 <div class="report-title">
-                    <h1>AutoNestCut Report</h1>
-                    <p class="developer-credit">Developed by: Int. Arch. M.Shkeir</p>
+                    <h2>Report Details</h2>
                 </div>
                 
                 <div class="project-info">

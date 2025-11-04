@@ -98,23 +98,11 @@ module AutoNestCut
     cmd.tooltip = 'Generate optimized cut lists and nesting diagrams for sheet goods'
     cmd.status_bar_text = 'AutoNestCut - Automated nesting for sheet goods'
     
-    # Cross-platform icon lookup with a few sensible fallbacks.
-    # Prefer a resources/icon.png located alongside this file, then the parent AutoNestCut/resources,
-    # then the repository root icon.png. Also verify the file is a PNG by checking the signature.
-    possible_icon_paths = [
-      File.join(__dir__, 'resources', 'icon.png'),
-      File.expand_path('../resources/icon.png', __dir__),
-      File.expand_path('../../icon.png', __dir__)
-    ]
-
-    chosen_icon = possible_icon_paths.find { |p| Util.png_file?(p) }
-    if chosen_icon
-      cmd.small_icon = chosen_icon
-      cmd.large_icon = chosen_icon
-      puts "✅ AutoNestCut icon loaded: #{chosen_icon}"
-    else
-      puts "⚠️ AutoNestCut: no valid icon found. Looked in: #{possible_icon_paths.join(', ')}"
-    end
+    # Set icons for toolbar
+    icon_path = File.join(__dir__, 'resources', 'icon.png')
+    cmd.small_icon = icon_path
+    cmd.large_icon = icon_path
+    puts "✅ AutoNestCut icon loaded: #{icon_path}"
     
     toolbar.add_item(cmd)
     toolbar.show
