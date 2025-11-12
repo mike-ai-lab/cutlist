@@ -1,0 +1,11 @@
+
+Extension fully fixed - no console errors, correct trial calculation!
+Loaded: C:\Users\Administrator\Desktop\AUTOMATION\cutlist\AutoNestCut\AutoNestCut_Clean_Workspace\Extension\temp_scripts\COMPLETE_FIX.rb
+#<NoMethodError: undefined method `open_purchase_page' for AutoNestCut:Module>
+c:/Users/Administrator/Desktop/AUTOMATION/cutlist/AutoNestCut/AutoNestCut_Clean_Workspace/Extension/AutoNestCut/main.rb:96:in `block in setup_ui'
+#<NoMethodError: undefined method `activate_extension' for AutoNestCut:Module>
+c:/Users/Administrator/Desktop/AUTOMATION/cutlist/AutoNestCut/AutoNestCut_Clean_Workspace/Extension/AutoNestCut/main.rb:89:in `block in setup_ui'
+#<NoMethodError: undefined method `activate_extension' for AutoNestCut:Module>
+c:/Users/Administrator/Desktop/AUTOMATION/cutlist/AutoNestCut/AutoNestCut_Clean_Workspace/Extension/AutoNestCut/main.rb:111:in `block in setup_ui'
+#<NoMethodError: undefined method `activate_extension' for AutoNestCut:Module>
+c:/Users/Administrator/Desktop/AUTOMATION/cutlist/AutoNestCut/AutoNestCut_Clean_Workspace/Extension/AutoNestCut/main.rb:111:in `block in setup_ui'

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AutoNestCut Efficiency Report Demo</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; background: #f7f7f7; }
+  h1, h2 { color: #333; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+  th { background-color: #e0e0e0; }
+  .warning { background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 10px; margin-bottom: 10px; }
+  .solution { background-color: #d4edda; border-left: 5px solid #28a745; padding: 10px; margin-bottom: 10px; }
+  .nest-container { display: flex; gap: 20px; margin-bottom: 20px; }
+  .sheet { border: 1px solid #333; background: #fff; width: 300px; height: 200px; position: relative; }
+  .part { position: absolute; border: 1px solid #555; background: rgba(0,128,255,0.5); text-align: center; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>AutoNestCut Efficiency Diagnostics Report</h1>
+
+<h2>1. Efficiency Score & SAR Impact</h2>
+<table>
+  <tr>
+    <th>Metric</th>
+    <th>Result</th>
+    <th>Target</th>
+    <th>SAR Impact</th>
+  </tr>
+  <tr>
+    <td>Material Yield</td>
+    <td>84%</td>
+    <td>90%+</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td>Sheets Used</td>
+    <td>14</td>
+    <td>12</td>
+    <td>2 extra sheets (~500 SAR)</td>
+  </tr>
+  <tr>
+    <td>Usable Offcuts</td>
+    <td>3 pieces</td>
+    <td>5+</td>
+    <td>Potential savings: 0.8 sheets (~200 SAR)</td>
+  </tr>
+</table>
+
+<h2>2. Diagnostics & Recommendations</h2>
+<div class="warning">
+  <strong>Warning 1:</strong> Part ID 104 is blocking optimal placement due to excessive length (2700 mm).  
+</div>
+<div class="solution">
+  <strong>Suggested Action:</strong> Split or reduce dimensions to reuse leftover sheets. Estimated savings: 1 sheet (~250 SAR).
+</div>
+
+<div class="warning">
+  <strong>Warning 2:</strong> Current sheet size (2800x2070 mm) creates long unusable strips (17% waste).  
+</div>
+<div class="solution">
+  <strong>Suggested Action:</strong> Use 2440x1220 mm sheets for improved efficiency (8% waste), saving ~1,500 SAR.
+</div>
+
+<div class="warning">
+  <strong>Warning 3:</strong> 5 offcuts larger than 300x300 mm marked as waste.  
+</div>
+<div class="solution">
+  <strong>Suggested Action:</strong> Save offcuts to remnant library for future jobs, estimated saving 0.8 sheets (~200 SAR).
+</div>
+
+<h2>3. Nesting Visualization</h2>
+<div class="nest-container">
+  <div class="sheet">
+    <div class="part" style="left:10px; top:10px; width:80px; height:50px;">P1</div>
+    <div class="part" style="left:100px; top:10px; width:150px; height:70px;">P2</div>
+    <div class="part" style="left:10px; top:70px; width:200px; height:100px;">P3</div>
+  </div>
+  <div class="sheet">
+    <div class="part" style="left:20px; top:20px; width:120px; height:60px;">P4</div>
+    <div class="part" style="left:150px; top:30px; width:100px; height:80px;">P5</div>
+  </div>
+</div>
+
+<h2>4. Remnant Advisor</h2>
+<ul>
+  <li>1000x400 mm saved for next job</li>
+  <li>800x300 mm saved for future cabinet panel</li>
+  <li>Potential savings if reused: 2 sheets (~500 SAR)</li>
+</ul>
+
+</body>
+</html>

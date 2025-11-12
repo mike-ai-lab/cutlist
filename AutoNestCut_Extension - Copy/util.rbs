@@ -1,0 +1,15 @@
+# Encoded Ruby file - AutoNestCut
+require_relative 'rgloader/rgloader'
+
+encoded_data = "eJyFVE1T2zAQvfdX7CQzxOkkJmkvMNOUoUC5pZ1CemiaeuR4bYtYUkaSQyDw3yvJNrYhTQ+2rP14u2/1ZCaiPEM4z7WYotIXuX4HwArjTNPM7ADcK8IYFGaxr0XAmJchT3Tady6AYle4nAl5tCc1loLZZMaqRMb8wxlCMqKDiDLkigrubUiWY1ADdLq7yuRLkfPIG/efGescwEywAai80GapCm9ebP17GlWEBlDaUqRJql8ZI1xXgYsDRakKVIqmciJEdFYWHQCjPNApXa44KgUT+GhMZNsyjUejIo5IJMV+VHVb0zCO/bx8JaQuw5uwdeR8tCj9jnTbN658Bfm280PlLBeJOpccYpIpBBo36n16xfTpqeH83Ob8DzCv6O592Um/xLRTaXehZY4Hj5+jJBqDNZE6oJHHCcMBUB7htprrMkPCA+swhO3iJyoPveP5HzJ8PB/+Gg1PF8cD6AW9hg7rpOegu3N4z4d0qEiMwZ0yohbhXYUTYkJ5+Q1gHFZaNuhlKmpZ0nNld2WJuohd3UcXLjHMEzOvbI0ShrAUXEuRZRhB+GDiNlQKbg5Tw4ZISkL7I5jdfpte3dxezG6Dy6svs+vJuN10ZCE9ppKqYXMyV9Of896bzN4CJhPojXsvzba5AaxzraAzb/x8FtDdGewXTm/4WlahiR1iHNe6rsnvHcMNZWvDLaScyAf4Pr0GRRNOjLwQlikuVz78cGJTTjtwnyKHNTFiwy1VpkfCI8iEWCnI6AqBOIyYZui3h7PmSWDNZ57N7u8Tcs4zK3mHfnQEXy2Iq/L/HBer6CMWkebanOwVjSFnVOuiDWVzPSKXMICTfmOsDt+E+krbe3BPdXrmdX5vT04NuU5/v9yabe2Zd/E2z182LuJY"
+
+begin
+  require 'base64'
+  require 'zlib'
+  decoded = Base64.strict_decode64(encoded_data)
+  source = Zlib::Inflate.inflate(decoded)
+  eval(source, binding, "util.rb")
+rescue => e
+  puts "Error loading encoded file: #{e.message}"
+  raise e
+end

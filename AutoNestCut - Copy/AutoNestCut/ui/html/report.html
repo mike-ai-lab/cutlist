@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>AutoNestCut Report</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Cut List Report</h1>
+        
+        <div class="section">
+            <h2>Summary</h2>
+            <div id="summary_info"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Boards Required</h2>
+            <div id="boards_table"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Parts List</h2>
+            <div id="parts_table"></div>
+        </div>
+        
+        <div class="buttons">
+            <button type="button" onclick="exportCSV()" class="primary">Export CSV</button>
+            <button type="button" onclick="window.close()">Close</button>
+        </div>
+    </div>
+    
+    <script>
+        let reportData = null;
+        
+        function receiveReportData(data) {
+            reportData = data;
+            displayReport();
+        }
+        
+        function displayReport() {
+            if (!reportData) return;
+            
+            displaySummary();
+            displayBoards();
+            displayParts();
+        }
+        
+        function displaySummary() {
+            const summary = reportData.report.summary;
+            document.getElementById('summary_info').innerHTML = `
+                <div class="summary-grid">
+                    <div>Total Parts: <strong>${summary.total_parts}</strong></div>
+                    <div>Total Boards: <strong>${summary.total_boards}</strong></div>
+                    <div>Overall Efficiency: <strong>${summary.overall_efficiency}%</strong></div>
+                    <div>Total Waste: <strong>${summary.overall_waste_percentage}%</strong></div>
+                </div>
+            `;
+        }
+        
+        function displayBoards() {
+            const boards = reportData.report.boards;
+            let html = '<table><thead><tr><th>Board#</th><th>Material</th><th>Size</th><th>Parts</th><th>Efficiency</th><th>Waste</th></tr></thead><tbody>';
+            
+            boards.forEach(board => {
+                html += `<tr>
+                    <td>${board.board_number}</td>
+                    <td>${board.material}</td>
+                    <td>${board.stock_size}</td>
+                    <td>${board.parts_count}</td>
+                    <td>${board.efficiency}%</td>
+                    <td>${board.waste_percentage}%</td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            document.getElementById('boards_table').innerHTML = html;
+        }
+        
+        function displayParts() {
+            const parts = reportData.report.parts;
+            let html = '<table><thead><tr><th>Part#</th><th>Name</th><th>Dimensions</th><th>Material</th><th>Board#</th><th>Rotated</th></tr></thead><tbody>';
+            
+            parts.forEach(part => {
+                html += `<tr>
+                    <td>${part.part_number}</td>
+                    <td>${part.name}</td>
+                    <td>${part.width} × ${part.height} × ${part.thickness}mm</td>
+                    <td>${part.material}</td>
+                    <td>${part.board_number}</td>
+                    <td>${part.rotated}</td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            document.getElementById('parts_table').innerHTML = html;
+        }
+        
+        function exportCSV() {
+            sketchup.export_csv();
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', function() {
+            sketchup.ready();
+        });
+    </script>
+</body>
+</html>

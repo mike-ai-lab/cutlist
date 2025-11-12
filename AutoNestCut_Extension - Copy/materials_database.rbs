@@ -1,0 +1,15 @@
+# Encoded Ruby file - AutoNestCut
+require_relative 'rgloader/rgloader'
+
+encoded_data = "eJy1VF1P2zAUfe+vuNoenEpRBIVtDO1DbIB4WBkSGzygKvKa29ZbEneOA5to//tsJ06cYgqttIe2sX18z+k9J1fg75IJBDIubkmvl/GkTBGOSsnPsZCfS9kDGKe0KGBIJQpG0+KYSvqDFqhOAMxXghMoMJ1ESX0UT1hanQOcqsfoJ2d5cHJ+dUOOLi6Oj74dkREsFmB2zr4OT8goBOKwErXMLGFsy0ZaZN/UxTzx8GNelALjVgZPExS1kGoB7ytFCRM5zTDoSO7X0GMmouyXggTVpT6UeYqqCfoA/7BCfrQna9SknCaNlrryWoUCZSlyuF9aOqO05vMKrX+aVql/d7+sNz9fXkUTLpCOZ93LIcyQKtbiEKQosQ8Jh4Xgd4v6olPvRm3fEN0oMhrp4g0EgNyxRM4IvP8ABlUtR5Hk8SR0cTNk05lsgfXag5wLNsYWWC09uKKcz1OGooU2OyZXhHTgOZdYtNhqWQMb3LJxKFntaq8ypxiXqItYL79LlkYJ/iinwYsTIbgA7TjLp44ftvGH8PIeo0yZSqe4fGH9q83y56egt21SgqZm/zlR0ubzOearzpM7UvmtXqXWb7WAd++gdjq01oaNd6H1JnSaH9rOjh4GJ9KxM0S6ZGj6sHA8sYzOFoCBdnb0tSZZ2rDB/v6OD2IzpTG7g4EXU8dJQ7zn6zJkMf7sALQtaPNjn56THOX1BsHx54Vlcy5krFobaLPjOZUzG5a1o+UB+rljpbn49EjR3qoyzjzRPTRLS+NsDZuttgD+kVa8LtAceKaWPl8zrgJ3XjWc192U9dcOsqAzyZoaZysx9BRpZ1zgDrmmxIWTUs/1p0af2brcbhqa9fl/m45VPnXMVYa2GYhTlLFa0DKVcZceHKvJRfr3jvMk3n2bZeZ/3rvmmwnS8dLMC9eY/VfhSqPJFz6mKVw+GH3mUBPBJybUxKu5CSxDj6DBloL2NhU0WC9oeHwa7772ijnYWREz2HnTFTPYVIwiAsUInzgVPiF+m54WsrezhU2PCPlKf8VXmGNdaFODDh725Exx6M4/pkYxQsUIPNeyVjqDKc1YjvH1jEncqj/7G/bHMIElbrrUcyeA82LqR/X5BzjChJg="
+
+begin
+  require 'base64'
+  require 'zlib'
+  decoded = Base64.strict_decode64(encoded_data)
+  source = Zlib::Inflate.inflate(decoded)
+  eval(source, binding, "materials_database.rb")
+rescue => e
+  puts "Error loading encoded file: #{e.message}"
+  raise e
+end

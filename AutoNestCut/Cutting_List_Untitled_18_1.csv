@@ -1,0 +1,33 @@
+UNIQUE PART TYPES SUMMARY
+Name,Width(mm),Height(mm),Thickness(mm),Material,Grain Direction,Total Quantity,Total Area(mm²)
+Component#1,520.0,2344.0,88.0,Wood_Floor_01_1K,vertical,11,13407680.0
+
+PARTS PLACED (DETAILED LIST)
+Unique ID,Name,Width(mm),Height(mm),Thickness(mm),Material,Area(mm²),Board#,X Pos(mm),Y Pos(mm),Rotated,Grain Direction
+P1,Component#1,520.0,2344.0,88.0,Wood_Floor_01_1K,1218880.0,1,0.0,0.0,No,vertical
+P2,Component#1,520.0,2344.0,88.0,Wood_Floor_01_1K,1218880.0,1,530.0,0.0,No,vertical
+P3,Component#1,520.0,2344.0,88.0,Wood_Floor_01_1K,1218880.0,1,1060.0,0.0,No,vertical
+P4,Component#1,520.0,2344.0,88.0,Wood_Floor_01_1K,1218880.0,1,1590.0,0.0,No,vertical
+P5,Component#1,520.0,2344.0,88.0,Wood_Floor_01_1K,1218880.0,2,0.0,0.0,No,vertical
+P6,Component#1,520.0,2344.0,88.0,Wood_Floor_01_1K,1218880.0,2,530.0,0.0,No,vertical
+P7,Component#1,520.0,2344.0,88.0,Wood_Floor_01_1K,1218880.0,2,1060.0,0.0,No,vertical
+P8,Component#1,520.0,2344.0,88.0,Wood_Floor_01_1K,1218880.0,2,1590.0,0.0,No,vertical
+P9,Component#1,520.0,2344.0,88.0,Wood_Floor_01_1K,1218880.0,3,0.0,0.0,No,vertical
+P10,Component#1,520.0,2344.0,88.0,Wood_Floor_01_1K,1218880.0,3,530.0,0.0,No,vertical
+P11,Component#1,520.0,2344.0,88.0,Wood_Floor_01_1K,1218880.0,3,1060.0,0.0,No,vertical
+
+BOARDS SUMMARY
+Board#,Material,Stock Size,Parts Count,Used Area(mm²),Waste Area(mm²),Waste %,Efficiency %
+1,Wood_Floor_01_1K,2440.0mm x 3500.0mm,4,4875520.0,3664480.0,42.91,57.09
+2,Wood_Floor_01_1K,2440.0mm x 3500.0mm,4,4875520.0,3664480.0,42.91,57.09
+3,Wood_Floor_01_1K,2440.0mm x 3500.0mm,3,3656640.0,4883360.0,57.18,42.82
+
+OVERALL SUMMARY
+Total Parts Instances,11
+Total Unique Part Types,1
+Total Boards,3
+Total Stock Area (mm²),25620000.0
+Total Used Area (mm²),13407680.0
+Total Waste Area (mm²),12212320.0
+Overall Waste %,47.67
+Overall Efficiency %,52.33

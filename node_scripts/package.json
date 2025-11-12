@@ -1,0 +1,23 @@
+{
+  "name": "parametrix-license-admin",
+  "version": "1.0.0",
+  "description": "PARAMETRIX License Management Tools",
+  "main": "admin.js",
+  "scripts": {
+    "generate-trial": "node admin.js generate",
+    "generate-full": "node admin.js generate",
+    "revoke": "node admin.js revoke",
+    "list": "node admin.js list"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
+    "node-fetch": "^3.3.2"
+  },
+  "keywords": [
+    "license",
+    "parametrix",
+    "sketchup"
+  ],
+  "author": "Int. Arch. M.Shkeir",
+  "license": "PROPRIETARY"
+}
