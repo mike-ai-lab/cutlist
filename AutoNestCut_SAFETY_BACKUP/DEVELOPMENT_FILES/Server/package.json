@@ -1,0 +1,22 @@
+{
+  "name": "autonestcutserver",
+  "version": "1.0.0",
+  "main": "server.mjs",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs"
+  },
+  "keywords": ["sketchup", "extension", "licensing"],
+  "author": "AutoNestCut",
+  "license": "ISC",
+  "description": "License server for AutoNestCut SketchUp extension",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.78.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^3.3.2"
+  }
+}

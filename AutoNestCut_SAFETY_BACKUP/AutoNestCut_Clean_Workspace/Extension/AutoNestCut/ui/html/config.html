@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>AutoNestCut Configuration</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>AutoNestCut Configuration</h1>
+        
+        <div class="buttons-top">
+            <button type="button" onclick="processNesting()" class="primary">Generate Cut List</button>
+            <button type="button" onclick="window.close()">Cancel</button>
+        </div>
+        
+        <div class="section">
+            <h2>General Settings</h2>
+            <div class="form-group">
+                <label for="kerf_width">Kerf Width (mm):</label>
+                <input type="number" id="kerf_width" step="0.1" min="0" max="10">
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="allow_rotation"> Allow part rotation
+                </label>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Stock Materials & Pricing</h2>
+            <div id="materials_list"></div>
+            <button type="button" onclick="addMaterial()">Add Material</button>
+        </div>
+        
+        <div class="section">
+            <h2>Parts Preview</h2>
+            <div id="parts_preview"></div>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

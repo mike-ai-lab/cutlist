@@ -25,6 +25,55 @@
                     <input type="checkbox" id="allow_rotation"> Allow part rotation
                 </label>
             </div>
+            <div class="form-group">
+                <label for="defaultCurrency">Default Currency:</label>
+                <select id="defaultCurrency">
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="SAR">SAR (ر.س)</option>
+                    <option value="AED">AED (د.إ)</option>
+                    <option value="KWD">KWD (د.ك)</option>
+                    <option value="QAR">QAR (ر.ق)</option>
+                    <option value="BHD">BHD (د.ب)</option>
+                    <option value="OMR">OMR (ر.ع)</option>
+                    <option value="JOD">JOD (د.ا)</option>
+                    <option value="CAD">CAD (C$)</option>
+                    <option value="AUD">AUD (A$)</option>
+                    <option value="JPY">JPY (¥)</option>
+                    <option value="CNY">CNY (¥)</option>
+                    <option value="INR">INR (₹)</option>
+                    <option value="BRL">BRL (R$)</option>
+                    <option value="MXN">MXN ($)</option>
+                    <option value="CHF">CHF (CHF)</option>
+                    <option value="SEK">SEK (kr)</option>
+                    <option value="NOK">NOK (kr)</option>
+                    <option value="DKK">DKK (kr)</option>
+                    <option value="PLN">PLN (zł)</option>
+                    <option value="TRY">TRY (₺)</option>
+                </select>
+                <button type="button" onclick="updateDefaultCurrency()" style="margin-left: 8px;">Update Currency</button>
+            </div>
+            <div class="form-group">
+                <label for="settingsUnits">Units:</label>
+                <select id="settingsUnits">
+                    <option value="mm">Millimeters (mm)</option>
+                    <option value="cm">Centimeters (cm)</option>
+                    <option value="in">Inches (in)</option>
+                    <option value="ft">Feet (ft)</option>
+                </select>
+                <button type="button" onclick="updateUnits()" style="margin-left: 8px;">Update Units</button>
+            </div>
+            <div class="form-group">
+                <label for="settingsPrecision">Precision:</label>
+                <select id="settingsPrecision">
+                    <option value="0">0 decimal places</option>
+                    <option value="1">1 decimal place</option>
+                    <option value="2">2 decimal places</option>
+                    <option value="3">3 decimal places</option>
+                </select>
+                <button type="button" onclick="updatePrecision()" style="margin-left: 8px;">Update Precision</button>
+            </div>
         </div>
         
         <div class="section">
@@ -40,5 +89,22 @@
     </div>
     
     <script src="app.js"></script>
+    <script>
+        // Initialize settings controls when page loads
+        window.addEventListener('load', function() {
+            // Wait for data to be received before setting values
+            setTimeout(function() {
+                if (document.getElementById('defaultCurrency') && typeof defaultCurrency !== 'undefined') {
+                    document.getElementById('defaultCurrency').value = defaultCurrency;
+                }
+                if (document.getElementById('settingsUnits') && typeof currentUnits !== 'undefined') {
+                    document.getElementById('settingsUnits').value = currentUnits;
+                }
+                if (document.getElementById('settingsPrecision') && typeof currentPrecision !== 'undefined') {
+                    document.getElementById('settingsPrecision').value = currentPrecision;
+                }
+            }, 100);
+        });
+    </script>
 </body>
 </html>

@@ -208,42 +208,21 @@ function renderReport() {
         }
     }
 
-    // Unique Board Types Table
-    const uniqueBoardTypesTable = document.getElementById('uniqueBoardTypesTable');
-    if (uniqueBoardTypesTable) {
-        uniqueBoardTypesTable.innerHTML = `
+    // Sheet Inventory Summary Table
+    const sheetInventoryTable = document.getElementById('sheetInventoryTable');
+    if (sheetInventoryTable && g_reportData.unique_board_types) {
+        sheetInventoryTable.innerHTML = `
             <tr><th>Material</th><th>Dimensions</th><th>Count</th><th>Total Area (m²)</th><th>Price/Sheet</th><th>Total Cost</th></tr>
         `;
-        if (g_reportData.unique_board_types) {
-            g_reportData.unique_board_types.forEach(board_type => {
-                uniqueBoardTypesTable.innerHTML += `
-                    <tr>
-                        <td>${board_type.material}</td>
-                        <td>${board_type.dimensions}</td>
-                        <td class="total-highlight">${board_type.count}</td>
-                        <td>${(board_type.total_area / 1000000).toFixed(3)}</td>
-                        <td>$${(board_type.price_per_sheet || 0).toFixed(2)}</td>
-                        <td class="total-highlight">$${(board_type.total_cost || 0).toFixed(2)}</td>
-                    </tr>
-                `;
-            });
-        }
-    }
-
-    // Boards Table
-    const boardsTable = document.getElementById('boardsTable');
-    boardsTable.innerHTML = `
-        <tr><th>Board#</th><th>Material</th><th>Size</th><th>Parts</th><th>Efficiency</th></tr>
-    `;
-    if (g_reportData.boards) {
-        g_reportData.boards.forEach(board => {
-            boardsTable.innerHTML += `
+        g_reportData.unique_board_types.forEach(board_type => {
+            sheetInventoryTable.innerHTML += `
                 <tr>
-                    <td>${board.board_number}</td>
-                    <td>${board.material}</td>
-                    <td>${board.stock_size}</td>
-                    <td class="total-highlight">${board.parts_count}</td>
-                    <td>${board.efficiency.toFixed(2)}%</td>
+                    <td>${board_type.material}</td>
+                    <td>${board_type.dimensions}</td>
+                    <td class="total-highlight">${board_type.count}</td>
+                    <td>${(board_type.total_area / 1000000).toFixed(3)}</td>
+                    <td>$${(board_type.price_per_sheet || 0).toFixed(2)}</td>
+                    <td class="total-highlight">$${(board_type.total_cost || 0).toFixed(2)}</td>
                 </tr>
             `;
         });
@@ -421,10 +400,8 @@ function exportInteractiveHTML() {
             <div id="materialsContainer"></div>
             <h2>Unique Part Types</h2>
             <table id="uniquePartTypesTable"></table>
-            <h2>Unique Board Types</h2>
-            <table id="uniqueBoardTypesTable"></table>
-            <h2>Boards Summary</h2>
-            <table id="boardsTable"></table>
+            <h2>Sheet Inventory Summary</h2>
+            <table id="sheetInventoryTable"></table>
             <h2>Parts Placed (Detailed)</h2>
             <table id="partsTable"></table>
         </div>
@@ -634,44 +611,9 @@ function getCompleteJSContent() {
                 }
             }
         
-            const uniqueBoardTypesTable = document.getElementById('uniqueBoardTypesTable');
-            if (uniqueBoardTypesTable) {
-                uniqueBoardTypesTable.innerHTML = \`
-                    <tr><th>Material</th><th>Dimensions</th><th>Count</th><th>Total Area (m²)</th><th>Price/Sheet</th><th>Total Cost</th></tr>
-                \`;
-                if (g_reportData.unique_board_types) {
-                    g_reportData.unique_board_types.forEach(board_type => {
-                        uniqueBoardTypesTable.innerHTML += \`
-                            <tr>
-                                <td>\${board_type.material}</td>
-                                <td>\${board_type.dimensions}</td>
-                                <td class="total-highlight">\${board_type.count}</td>
-                                <td>\${(board_type.total_area / 1000000).toFixed(3)}</td>
-                                <td>$\${(board_type.price_per_sheet || 0).toFixed(2)}</td>
-                                <td class="total-highlight">$\${(board_type.total_cost || 0).toFixed(2)}</td>
-                            </tr>
-                        \`;
-                    });
-                }
-            }
+
         
-            const boardsTable = document.getElementById('boardsTable');
-            boardsTable.innerHTML = \`
-                <tr><th>Board#</th><th>Material</th><th>Size</th><th>Parts</th><th>Efficiency</th></tr>
-            \`;
-            if (g_reportData.boards) {
-                g_reportData.boards.forEach(board => {
-                    boardsTable.innerHTML += \`
-                        <tr>
-                            <td>\${board.board_number}</td>
-                            <td>\${board.material}</td>
-                            <td>\${board.stock_size}</td>
-                            <td class="total-highlight">\${board.parts_count}</td>
-                            <td>\${board.efficiency.toFixed(2)}%</td>
-                        </tr>
-                    \`;
-                });
-            }
+
         
             const partsTable = document.getElementById('partsTable');
             partsTable.innerHTML = \`
@@ -984,8 +926,7 @@ function animate() {
 
 
 
-// Resizer functionality
-let resizerInitialized = false;
+
 
 function initResizer() {
     const resizer = document.getElementById('resizer');

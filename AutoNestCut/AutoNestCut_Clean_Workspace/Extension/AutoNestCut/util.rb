@@ -1,6 +1,23 @@
 module AutoNestCut
   module Util
     
+    # Unit conversion factors (to mm)
+    UNIT_FACTORS = {
+      'mm' => 1.0,
+      'cm' => 10.0,
+      'm' => 1000.0,
+      'in' => 25.4,
+      'ft' => 304.8
+    }.freeze
+    
+    UNIT_LABELS = {
+      'mm' => 'mm',
+      'cm' => 'cm', 
+      'm' => 'm',
+      'in' => 'in',
+      'ft' => 'ft'
+    }.freeze
+    
     def self.to_mm(length)
       length.to_mm
     end
@@ -9,12 +26,46 @@ module AutoNestCut
       mm.mm
     end
     
-    def self.format_dimension(value_mm)
-      "#{value_mm.round(1)}mm"
+    def self.convert_units(value, from_unit, to_unit)
+      return value if from_unit == to_unit
+      return 0 unless UNIT_FACTORS[from_unit] && UNIT_FACTORS[to_unit]
+      
+      # Convert to mm first, then to target unit
+      value_mm = value * UNIT_FACTORS[from_unit]
+      value_mm / UNIT_FACTORS[to_unit]
+    end
+    
+    def self.format_dimension(value_mm, display_unit = nil, precision = 1)
+      display_unit ||= Config.get_cached_settings['units'] || 'mm'
+      
+      converted_value = convert_units(value_mm, 'mm', display_unit)
+      unit_label = UNIT_LABELS[display_unit] || display_unit
+      
+      if precision == 0
+        "#{converted_value.round}#{unit_label}"
+      else
+        "#{converted_value.round(precision)}#{unit_label}"
+      end
+    end
+    
+    def self.format_area(area_mm2, display_unit = nil)
+      display_unit ||= Config.get_cached_settings['units'] || 'mm'
+      
+      area_unit = "#{display_unit}2"
+      factor = UNIT_FACTORS[display_unit] || 1.0
+      converted_area = area_mm2 / (factor * factor)
+      
+      "#{converted_area.round(3)} #{area_unit}"
     end
     
     def self.get_dimensions(bounds)
       [bounds.width.to_mm, bounds.height.to_mm, bounds.depth.to_mm]
+    end
+    
+    def self.get_dimensions_in_unit(bounds, unit = nil)
+      unit ||= Config.get_cached_settings['units'] || 'mm'
+      dimensions_mm = get_dimensions(bounds)
+      dimensions_mm.map { |dim| convert_units(dim, 'mm', unit) }
     end
     
     def self.is_sheet_good?(bounds, min_thickness = 3, max_thickness = 100, min_area = 1000)

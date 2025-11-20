@@ -5,114 +5,146 @@
     <title>AutoNestCut</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="diagrams_style.css">
+    <link rel="stylesheet" href="resizer_fix.css">
+    <style>
+        .currency-conversion {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .currency-conversion label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .currency-conversion select,
+        .currency-conversion input {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        .currency-conversion button {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #007cba;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .currency-conversion button:hover {
+            background: #005a87;
+        }
+        .icon-btn {
+            padding: 5px;
+            background: #007cba;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .icon-btn:hover {
+            background: #005a87;
+        }
+        #settingsModal {
+            z-index: 1000;
+        }
+        #settingsModal .modal-content {
+            z-index: 1001;
+        }
+    </style>
+    <script src="languages.js"></script>
 </head>
 <body>
     <div class="header">
         <div class="header-content">
-            <h1>AutoNestCut</h1>
-            <p class="developer-credit">Developed by: Int. Arch. M.Shkeir</p>
+            <h1 data-translate="app_title">AutoNestCut <span style="color: #007cba; font-size: 12px; font-weight: normal;">[Phase 1: Enhanced Units]</span></h1>
+            <p class="developer-credit" data-translate="developer_credit">Developed by: Int. Arch. M.Shkeir</p>
         </div>
-        <div class="tabs">
-            <button class="tab-button active" onclick="showTab('config')">Configuration</button>
-            <button class="tab-button" id="reportTab" onclick="showTab('report')" disabled>Report</button>
+        <div class="header-controls">
+            <button class="settings-btn" onclick="openSettings()" title="Settings">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
+            <div class="action-buttons">
+                <button class="tab-button" onclick="processNesting()" data-translate="generate_cut_list">Generate Cut List</button>
+                <button class="tab-button" onclick="refreshConfiguration()" data-translate="refresh_selection">Refresh Selection</button>
+                <button class="tab-button" onclick="window.close()" data-translate="cancel">Cancel</button>
+                <button class="tab-button" id="refreshReportButton" onclick="refreshReportWithFeedback()" data-translate="refresh_report" style="display: none;">Refresh</button>
+                <button class="tab-button" id="printButton" data-translate="print_save_pdf" style="display: none;">PDF</button>
+                <button class="tab-button" id="exportCsvButton" data-translate="export_csv_report" style="display: none;">CSV</button>
+                <button class="tab-button" id="exportHtmlButton" data-translate="export_interactive_html" style="display: none;">HTML</button>
+            </div>
+            <div class="tabs">
+                <button class="tab-button active" onclick="showTab('config')" data-translate="configuration">Configuration</button>
+                <button class="tab-button" id="reportTab" onclick="showTab('report')" disabled data-translate="report">Report</button>
+            </div>
         </div>
     </div>
 
     <!-- Configuration Tab -->
     <div id="configTab" class="tab-content active">
         <div class="config-container">
-            <div class="buttons-top">
-                <button type="button" onclick="processNesting()" class="primary">Generate Cut List</button>
-                <button type="button" onclick="window.close()">Cancel</button>
-            </div>
+
             
             <div class="section">
-                <h2>General Settings</h2>
+                <h2 data-translate="general_settings">General Settings</h2>
                 <div class="form-group">
-                    <label for="kerf_width">Kerf Width (mm):</label>
+                    <label for="kerf_width" data-translate="kerf_width">Kerf Width (mm):</label>
                     <input type="number" id="kerf_width" name="kerf_width" step="0.1" min="0" max="10">
                 </div>
                 <div class="form-group">
                     <label for="allow_rotation">
-                        <input type="checkbox" id="allow_rotation" name="allow_rotation"> Allow part rotation
+                        <input type="checkbox" id="allow_rotation" name="allow_rotation"> <span data-translate="allow_rotation">Allow part rotation</span>
                     </label>
                 </div>
             </div>
             
             <div class="section">
-                <h2>Stock Materials & Pricing</h2>
-                <div class="materials-controls-group">
-                    <div class="materials-action-buttons">
-                        <button type="button" onclick="addMaterial()" class="material-icon-btn" title="Add Material">
-                            <svg class="material-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                            <span>Add</span>
-                        </button>
-                        <button type="button" onclick="loadDefaults()" class="material-icon-btn" title="Load Defaults">
-                            <svg class="material-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
-                                <path d="M21 3v5h-5"></path>
-                                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
-                                <path d="M3 21v-5h5"></path>
-                            </svg>
-                            <span>Defaults</span>
-                        </button>
-                        <button type="button" onclick="importCSV()" class="material-icon-btn" title="Import CSV">
-                            <svg class="material-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="17 8 12 3 7 8"></polyline>
-                                <line x1="12" y1="3" x2="12" y2="15"></line>
-                            </svg>
-                            <span>Import</span>
-                        </button>
-                        <button type="button" onclick="exportDatabase()" class="material-icon-btn" title="Export Database">
-                            <svg class="material-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="7 10 12 15 17 10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            <span>Export</span>
-                        </button>
-                    </div>
-                    <div class="materials-sort-controls">
-                        <select id="sortBy" onchange="displayMaterials()" class="sort-select">
-                            <option value="alphabetical">Sort: A-Z</option>
-                            <option value="usage">Sort: Used First</option>
-                            <option value="mostUsed">Sort: Most Used</option>
-                        </select>
-                    </div>
-                    <div class="materials-filter-buttons">
-                        <button type="button" id="foldToggle" onclick="toggleFold()" class="material-icon-btn" title="Show Used Only">
-                            <svg class="material-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                            </svg>
-                            <span>Used Only</span>
-                        </button>
-                        <button type="button" onclick="clearHighlight()" class="material-icon-btn" title="Clear Highlight">
-                            <svg class="material-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <path d="m21 21-4.35-4.35"></path>
-                            </svg>
-                            <span>Clear</span>
-                        </button>
-                    </div>
+                <h2 data-translate="stock_materials_pricing">Stock Materials & Pricing</h2>
+                <div class="materials-controls-single-row" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 15px;">
+                    <button type="button" onclick="addMaterial()" class="material-icon-btn">Add</button>
+                    <button type="button" onclick="loadDefaults()" class="material-icon-btn">Defaults</button>
+                    <button type="button" onclick="importCSV()" class="material-icon-btn">Import CSV</button>
+                    <button type="button" onclick="exportDatabase()" class="material-icon-btn">Export DB</button>
+                    <button type="button" id="foldToggle" onclick="toggleFold()" class="material-icon-btn">Used Only</button>
+                    <button type="button" onclick="clearHighlight()" class="material-icon-btn">Clear</button>
+                    <select id="sortBy" onchange="displayMaterials()" class="sort-select">
+                        <option value="alphabetical">Sort: A-Z</option>
+                        <option value="usage">Sort: Used First</option>
+                        <option value="mostUsed">Sort: Most Used</option>
+                    </select>
+                    <select id="defaultCurrency" onchange="updateDefaultCurrency()" class="sort-select">
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
+                        <option value="SAR">SAR (ر.س)</option>
+                        <option value="AED">AED (د.إ)</option>
+                    </select>
                 </div>
                 <div class="materials-header">
-                    <span>Material Name</span>
-                    <span>Width (mm)</span>
-                    <span>Height (mm)</span>
-                    <span>Price</span>
-                    <span>Actions</span>
-                    <span>Status</span>
+                    <span data-translate="material_name">Material Name</span>
+                    <span data-translate="width_mm">Width (mm)</span>
+                    <span data-translate="height_mm">Height (mm)</span>
+                    <span data-translate="thickness_mm">Thickness (mm)</span>
+                    <span data-translate="price">Price</span>
+                    <span data-translate="currency">Currency</span>
+                    <span data-translate="actions">Actions</span>
+                    <span data-translate="status">Status</span>
                 </div>
                 <div id="materials_list" class="materials-list"></div>
             </div>
             
             <div class="section">
-                <h2>Parts Preview</h2>
+                <h2 data-translate="parts_preview">Parts Preview</h2>
                 <div id="parts_preview"></div>
             </div>
         </div>
@@ -120,84 +152,157 @@
 
     <!-- Report Tab -->
     <div id="reportTabContent" class="tab-content">
-        <div class="report-header">
-            <button id="printButton" class="icon-export-btn" title="Print / Save as PDF">
-                <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                    <rect x="6" y="14" width="12" height="8"></rect>
-                </svg>
-                <span class="export-label">PDF</span>
-            </button>
-            <button id="exportCsvButton" class="icon-export-btn" title="Export CSV Report">
-                <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                    <polyline points="13 2 13 9 20 9"></polyline>
-                    <line x1="9" y1="13" x2="15" y2="13"></line>
-                    <line x1="9" y1="17" x2="15" y2="17"></line>
-                </svg>
-                <span class="export-label">CSV</span>
-            </button>
-            <button id="exportHtmlButton" class="icon-export-btn" title="Export Interactive HTML">
-                <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                </svg>
-                <span class="export-label">HTML</span>
-            </button>
-        </div>
+
 
         <div class="container">
             <div id="diagramsContainer" class="diagrams-container">
-                <h2>Diagrams</h2>
+                <h2 data-translate="diagrams">Diagrams</h2>
                 <p>Generate a report to view diagrams...</p>
             </div>
             <div class="resizer" id="resizer"></div>
             <div id="reportContainer" class="report-container">
                 <div class="report-title">
-                    <h2>Report Details</h2>
+                    <h2 data-translate="report_details">Report Details</h2>
                 </div>
                 
                 <div class="project-info">
                     <div class="project-field">
-                        <label for="projectName">Project Name:</label>
-                        <input type="text" id="projectName" name="projectName" placeholder="Enter project name">
+                        <label for="projectName" data-translate="project_name">Project Name:</label>
+                        <input type="text" id="projectName" name="projectName" data-translate="enter_project_name" placeholder="Enter project name">
                     </div>
                     <div class="project-field">
-                        <label for="projectAddress">Address:</label>
-                        <input type="text" id="projectAddress" name="projectAddress" placeholder="Enter project address">
+                        <label for="projectAddress" data-translate="address">Address:</label>
+                        <input type="text" id="projectAddress" name="projectAddress" data-translate="enter_project_address" placeholder="Enter project address">
                     </div>
                     <div class="project-field">
-                        <label for="projectDate">Date:</label>
+                        <label for="projectDate" data-translate="date">Date:</label>
                         <input type="date" id="projectDate" name="projectDate">
                     </div>
                 </div>
 
-                <h2>Materials Used</h2>
+                <div class="section-separator"></div>
+                <h2 data-translate="materials_used">Materials Used</h2>
                 <div id="materialsContainer"></div>
 
-                <h2>Overall Summary</h2>
+                <div class="section-separator"></div>
+                <h2 data-translate="overall_summary">Overall Summary</h2>
                 <table id="summaryTable"></table>
 
-                <h2>Unique Part Types</h2>
+                <div class="section-separator"></div>
+                <h2 data-translate="unique_part_types">Unique Part Types</h2>
                 <table id="uniquePartTypesTable"></table>
 
-                <h2>Unique Board Types</h2>
-                <table id="uniqueBoardTypesTable"></table>
+                <div class="section-separator"></div>
+                <h2>Sheet Inventory Summary</h2>
+                <table id="sheetInventoryTable"></table>
 
-                <h2>Boards Summary</h2>
-                <table id="boardsTable"></table>
+                <div class="section-separator"></div>
+                <h2 data-translate="cost_breakdown">Cost Breakdown</h2>
+                <div id="costBreakdownContainer" class="cost-breakdown-wrapper"></div>
 
-                <h2>Parts Placed (Detailed)</h2>
+                <div class="section-separator"></div>
+                <h2 data-translate="parts_placed_detailed">Cut List & Part Details</h2>
                 <div class="tree-controls">
-                    <button type="button" id="treeToggle" onclick="toggleTreeView()">Show Tree Structure</button>
+                    <button type="button" id="treeToggle" onclick="toggleTreeView()" data-translate="show_tree_structure">Show Tree Structure</button>
                     <div class="tree-search" id="treeSearchContainer" style="display: none;">
-                        <input type="text" id="treeSearch" placeholder="Search components..." oninput="filterTree()">
-                        <button type="button" onclick="clearTreeSearch()">Clear</button>
+                        <input type="text" id="treeSearch" data-translate="search_components" placeholder="Search components..." oninput="filterTree()">
+                        <button type="button" onclick="clearTreeSearch()" data-translate="clear">Clear</button>
                         <button type="button" onclick="expandAll()">Expand All</button>
                         <button type="button" onclick="collapseAll()">Collapse All</button>
                     </div>
                 </div>
                 <div id="treeStructure" class="tree-structure" style="display: none;"></div>
                 <table id="partsTable"></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSettings()">&times;</span>
+
+            <div class="settings-section">
+                <h3>Units</h3>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <select id="settingsUnits" class="sort-select">
+                        <option value="mm">Millimeters (mm)</option>
+                        <option value="cm">Centimeters (cm)</option>
+                        <option value="m">Meters (m)</option>
+                        <option value="in">Inches (in)</option>
+                        <option value="ft">Feet (ft)</option>
+                    </select>
+                    <button onclick="updateUnits()" class="icon-btn" title="Update Units">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                            <path d="M21 3v5h-5"></path>
+                            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                            <path d="M3 21v-5h5"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3>Precision</h3>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <select id="settingsPrecision" class="sort-select">
+                        <option value="0">0</option>
+                        <option value="1">0.0</option>
+                        <option value="2">0.00</option>
+                        <option value="3">0.000</option>
+                    </select>
+                    <button onclick="updatePrecision()" class="icon-btn" title="Update Precision">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                            <path d="M21 3v5h-5"></path>
+                            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                            <path d="M3 21v-5h5"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3>Area Units</h3>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <select id="settingsAreaUnits" class="sort-select">
+                        <option value="mm2">Square Millimeters (mm²)</option>
+                        <option value="cm2">Square Centimeters (cm²)</option>
+                        <option value="m2">Square Meters (m²)</option>
+                        <option value="in2">Square Inches (in²)</option>
+                        <option value="ft2">Square Feet (ft²)</option>
+                    </select>
+                    <button onclick="updateAreaUnits()" class="icon-btn" title="Update Area Units">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                            <path d="M21 3v5h-5"></path>
+                            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                            <path d="M3 21v-5h5"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3>Default Currency</h3>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <select id="settingsCurrency" class="sort-select">
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="SAR">SAR (ر.س)</option>
+                        <option value="AED">AED (د.إ)</option>
+                        <option value="GBP">GBP (£)</option>
+                    </select>
+                    <button onclick="updateCurrency()" class="icon-btn" title="Update Currency">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                            <path d="M21 3v5h-5"></path>
+                            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                            <path d="M3 21v-5h5"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="settings-buttons">
+                <button onclick="closeSettings()" class="primary">Close</button>
             </div>
         </div>
     </div>
@@ -218,44 +323,87 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="app.js"></script>
     <script src="diagrams_report.js"></script>
+    <script src="resizer_fix.js"></script>
     <script>
         let currentReportData = null;
 
         function showTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tabs .tab-button').forEach(btn => btn.classList.remove('active'));
+            
+            const actionButtons = document.querySelectorAll('.action-buttons .tab-button');
+            actionButtons.forEach(btn => {
+                if (tabName === 'config') {
+                    if (btn.id && (btn.id.includes('Report') || btn.id.includes('Button'))) {
+                        btn.style.display = 'none';
+                    } else {
+                        btn.style.display = 'inline-block';
+                    }
+                } else if (tabName === 'report') {
+                    if (btn.id && (btn.id.includes('Report') || btn.id.includes('Button'))) {
+                        btn.style.display = 'inline-block';
+                    } else {
+                        btn.style.display = 'none';
+                    }
+                }
+            });
             
             if (tabName === 'config') {
                 document.getElementById('configTab').classList.add('active');
             } else if (tabName === 'report') {
                 document.getElementById('reportTabContent').classList.add('active');
             }
-            document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
+            document.querySelector(`.tabs [onclick="showTab('${tabName}')"]`).classList.add('active');
         }
 
         function showReportTab(data) {
+            console.log('showReportTab called with data:', data);
+            
             document.getElementById('reportTab').disabled = false;
             currentReportData = data;
-            g_boardsData = data.diagrams;
-            g_reportData = data.report;
-            window.originalComponents = data.original_components || [];
-            window.hierarchyTree = data.hierarchy_tree || [];
             
-            // Set current date as default
-            document.getElementById('projectDate').value = new Date().toISOString().split('T')[0];
-            
-            renderDiagrams();
-            renderReport();
-            showTab('report');
-            
-            // Initialize export button event listeners only once
-            initializeExportButtons();
-            
-            // Re-initialize resizer after showing report tab
-            setTimeout(() => {
-                resizerInitialized = false;
-                initResizer();
-            }, 100);
+            // Ensure data structure is correct
+            if (data && data.diagrams && data.report) {
+                g_boardsData = data.diagrams;
+                g_reportData = data.report;
+                window.originalComponents = data.original_components || [];
+                window.hierarchyTree = data.hierarchy_tree || [];
+                
+                console.log('Report data loaded:', g_reportData);
+                console.log('Boards data loaded:', g_boardsData);
+                
+                // Set current date as default
+                const projectDateEl = document.getElementById('projectDate');
+                if (projectDateEl) {
+                    projectDateEl.value = new Date().toISOString().split('T')[0];
+                }
+                
+                // Render with delay to ensure DOM is ready
+                setTimeout(() => {
+                    if (typeof renderDiagrams === 'function') {
+                        console.log('Calling renderDiagrams');
+                        renderDiagrams();
+                    }
+                    if (typeof renderReport === 'function') {
+                        console.log('Calling renderReport');
+                        renderReport();
+                    }
+                }, 100);
+                
+                showTab('report');
+                
+                // Initialize export button event listeners only once
+                initializeExportButtons();
+                
+                // Re-initialize resizer after showing report tab
+                setTimeout(() => {
+                    resizerInitialized = false;
+                    initResizer();
+                }, 200);
+            } else {
+                console.error('Invalid data structure received:', data);
+                alert('Error: Invalid report data received. Please try generating the report again.');
+            }
         }
         
         let exportButtonsInitialized = false;
@@ -312,12 +460,43 @@
         }
 
         function showError(message) {
+            console.error('Error:', message);
             alert(message);
+        }
+        
+
+        
+        function refreshConfiguration() {
+            callRuby('refresh_config');
+        }
+        
+        function refreshReport() {
+            callRuby('refresh_report');
+        }
+        
+        function refreshReportWithFeedback() {
+            refreshReport();
+        }
+        
+        function receiveRefreshedData(data) {
+            // Update the configuration with refreshed data
+            receiveInitialData(data);
+        }
+        
+        function refreshReportWithCurrentSettings() {
+            // Get current settings from the form
+            const settings = getCurrentSettings();
+            if (settings) {
+                // Re-process with current settings
+                callRuby('process', JSON.stringify(settings));
+            }
         }
         
         function showConfigTab() {
             showTab('config');
         }
+        
+        let showTreeView = false;
         
         function toggleTreeView() {
             showTreeView = !showTreeView;
@@ -329,7 +508,6 @@
                 button.textContent = 'Hide Tree Structure';
                 treeContainer.style.display = 'block';
                 searchContainer.style.display = 'flex';
-                renderTreeStructure();
             } else {
                 button.textContent = 'Show Tree Structure';
                 treeContainer.style.display = 'none';

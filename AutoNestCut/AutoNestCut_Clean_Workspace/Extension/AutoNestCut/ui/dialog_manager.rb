@@ -63,9 +63,12 @@ module AutoNestCut
           boards = nester.optimize_boards(@parts_by_material, new_settings)
           
           if boards.empty?
-            @dialog.execute_script("showError('No boards could be generated.')")
+            puts "ERROR: No boards generated from nesting process"
+            @dialog.execute_script("showError('No boards could be generated. Please check your material settings and part dimensions.')")
             return
           end
+          
+          puts "DEBUG: Generated #{boards.length} boards successfully"
           
           report_generator = ReportGenerator.new
           report_data = report_generator.generate_report_data(boards, new_settings)
@@ -77,6 +80,12 @@ module AutoNestCut
             original_components: @original_components,
             hierarchy_tree: @hierarchy_tree
           }
+          
+          puts "DEBUG: Sending report data to frontend:"
+          puts "  - Diagrams count: #{data[:diagrams].length}"
+          puts "  - Report summary: #{report_data[:summary] if report_data}"
+          puts "  - Parts placed count: #{report_data[:parts_placed].length if report_data && report_data[:parts_placed]}"
+          
           @dialog.execute_script("showReportTab(#{data.to_json})")
         rescue => e
           @dialog.execute_script("showError('Error processing: #{e.message}')")
@@ -149,6 +158,37 @@ module AutoNestCut
         clear_component_highlight
       end
       
+      @dialog.add_action_callback("refresh_config") do |action_context|
+        refresh_configuration_data
+      end
+      
+      @dialog.add_action_callback("refresh_report") do |action_context|
+        refresh_report_data
+      end
+      
+      @dialog.add_action_callback("update_global_setting") do |action_context, setting_json|
+        begin
+          setting_data = JSON.parse(setting_json)
+          key = setting_data['key']
+          value = setting_data['value']
+          Config.update_global_setting(key, value)
+          
+          # No need to reload all settings - the frontend will handle the update
+          puts "Updated global setting: #{key} = #{value}"
+        rescue => e
+          puts "Error updating global setting: #{e.message}"
+        end
+      end
+      
+      @dialog.add_action_callback("save_settings") do |action_context, settings_json|
+        begin
+          settings = JSON.parse(settings_json)
+          Config.save_settings(settings)
+        rescue => e
+          puts "Error saving settings: #{e.message}"
+        end
+      end
+      
       @dialog.show
     end
     
@@ -204,7 +244,16 @@ module AutoNestCut
       
       if @original_components && !@original_components.empty?
         @original_components.each do |comp_data|
-          if comp_data[:material] == material_name
+          # Improved material matching - handle different material name formats
+          comp_material = comp_data[:material].to_s.strip
+          search_material = material_name.to_s.strip
+          
+          # Direct match or partial match
+          if comp_material == search_material || 
+             comp_material.downcase == search_material.downcase ||
+             comp_material.include?(search_material) ||
+             search_material.include?(comp_material)
+            
             # Find component by entity ID in all entities
             found_entity = find_entity_by_id(model, comp_data[:entity_id])
             if found_entity
@@ -217,35 +266,56 @@ module AutoNestCut
       # Add matching components to selection for highlighting
       matching_components.each { |comp| selection.add(comp) }
       
-      # Zoom to selection if components found
+      # Smooth zoom to selection if components found
       if matching_components.any?
-        model.active_view.zoom_extents
-        UI.messagebox("Highlighted #{matching_components.length} components with material: #{material_name}")
+        # Get current camera position for smooth transition
+        view = model.active_view
+        current_camera = view.camera
+        
+        # Zoom to selection with smooth transition
+        view.zoom(matching_components)
+        
+        # Optional: Add a subtle status message instead of popup
+        model.set_attribute('AutoNestCut_Status', 'last_highlight', "#{matching_components.length} components highlighted")
       else
+        # Show error message for debugging
+        puts "DEBUG: No components found with material: #{material_name}"
+        puts "DEBUG: Available materials: #{@original_components.map{|c| c[:material]}.uniq.join(', ')}"
         UI.messagebox("No components found with material: #{material_name}")
       end
     end
     
     def find_entity_by_id(model, entity_id)
+      return nil unless entity_id
+      
       # Search in main model entities
       model.entities.each do |entity|
         return entity if entity.entityID == entity_id
         
-        # Search in groups recursively
+        # Search in groups and components recursively
         if entity.is_a?(Sketchup::Group)
-          found = find_entity_in_group(entity, entity_id)
+          found = find_entity_in_container(entity, entity_id)
+          return found if found
+        elsif entity.is_a?(Sketchup::ComponentInstance)
+          found = find_entity_in_container(entity.definition, entity_id)
           return found if found
         end
       end
       nil
     end
     
-    def find_entity_in_group(group, entity_id)
-      group.entities.each do |entity|
+    def find_entity_in_container(container, entity_id)
+      return nil unless container.respond_to?(:entities)
+      
+      container.entities.each do |entity|
         return entity if entity.entityID == entity_id
         
+        # Recursive search in nested containers
         if entity.is_a?(Sketchup::Group)
-          found = find_entity_in_group(entity, entity_id)
+          found = find_entity_in_container(entity, entity_id)
+          return found if found
+        elsif entity.is_a?(Sketchup::ComponentInstance)
+          found = find_entity_in_container(entity.definition, entity_id)
           return found if found
         end
       end
@@ -254,6 +324,61 @@ module AutoNestCut
     
     def clear_component_highlight
       Sketchup.active_model.selection.clear
+    end
+    
+    def refresh_configuration_data
+      # Re-analyze current selection
+      model = Sketchup.active_model
+      selection = model.selection
+      
+      if selection.empty?
+        @dialog.execute_script("showError('Please select components or groups to analyze for refresh.')")
+        return
+      end
+      
+      begin
+        analyzer = ModelAnalyzer.new
+        @parts_by_material = analyzer.extract_parts_from_selection(selection)
+        @original_components = analyzer.get_original_components_data
+        @hierarchy_tree = analyzer.get_hierarchy_tree
+        
+        if @parts_by_material.empty?
+          @dialog.execute_script("showError('No valid sheet good parts found in your selection.')")
+          return
+        end
+        
+        # Update settings with new materials
+        settings = Config.load_settings
+        settings['stock_materials'] ||= {}
+        @parts_by_material.keys.each do |material|
+          unless settings['stock_materials'][material]
+            settings['stock_materials'][material] = { 'width' => 2440, 'height' => 1220, 'price' => 0 }
+          end
+        end
+        
+        # Send refreshed data
+        data = {
+          settings: settings,
+          parts_by_material: serialize_parts_by_material(@parts_by_material),
+          original_components: @original_components,
+          model_materials: get_model_materials,
+          hierarchy_tree: @hierarchy_tree
+        }
+        @dialog.execute_script("receiveRefreshedData(#{data.to_json})")
+      rescue => e
+        @dialog.execute_script("showError('Error refreshing data: #{e.message}')")
+      end
+    end
+    
+    def refresh_report_data
+      return unless @parts_by_material && !@parts_by_material.empty?
+      
+      begin
+        # Get current settings from dialog
+        @dialog.execute_script("refreshReportWithCurrentSettings()")
+      rescue => e
+        @dialog.execute_script("showError('Error refreshing report: #{e.message}')")
+      end
     end
     
     def export_csv_report(report_data)

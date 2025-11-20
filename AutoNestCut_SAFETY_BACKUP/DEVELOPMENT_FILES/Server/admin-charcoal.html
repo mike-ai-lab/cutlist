@@ -1,0 +1,1242 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AutoNestCut — License Administration</title>
+  <link rel="icon" href="../icon.png">
+  <style>
+    :root {
+      --bg-primary: #1a1a1a;
+      --bg-secondary: #2a2a2a;
+      --bg-tertiary: #3a3a3a;
+      --text-primary: #e5e5e5;
+      --text-secondary: #b8b8b8;
+      --text-muted: #888888;
+      --border-color: #4a4a4a;
+      --accent-color: #666666;
+      --hover-color: #555555;
+    }
+
+    [data-theme="light"] {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8f9fa;
+      --bg-tertiary: #e9ecef;
+      --text-primary: #212529;
+      --text-secondary: #495057;
+      --text-muted: #6c757d;
+      --border-color: #dee2e6;
+      --accent-color: #495057;
+      --hover-color: #6c757d;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .admin-container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 24px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.2);
+      border: 1px solid var(--border-color);
+    }
+
+    .header {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+      position: relative;
+    }
+
+    .theme-toggle {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+    }
+
+    .theme-toggle:hover {
+      background: var(--hover-color);
+      color: var(--text-primary);
+    }
+
+    .header img.icon {
+      width: 48px;
+      height: 48px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .header .lead {
+      color: var(--text-secondary);
+      margin-top: 6px;
+      font-size: 14px;
+    }
+
+    .nav-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 24px;
+      gap: 0;
+    }
+
+    .nav-tab {
+      padding: 12px 20px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: all 0.2s;
+      font-size: 14px;
+    }
+
+    .nav-tab:hover {
+      color: var(--text-secondary);
+    }
+
+    .nav-tab.active {
+      color: var(--text-primary);
+      border-bottom-color: var(--accent-color);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 18px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      padding: 20px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      text-align: center;
+      transition: transform 0.2s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-1px);
+    }
+
+    .stat-number {
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--text-primary);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: var(--text-secondary);
+    }
+
+    input, select, textarea {
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 2px rgba(102, 102, 102, 0.2);
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: var(--accent-color);
+      color: var(--text-primary);
+    }
+
+    .btn-primary:hover {
+      background: var(--hover-color);
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+      background: var(--hover-color);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-outline:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .template-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    .template-card {
+      padding: 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: var(--bg-tertiary);
+    }
+
+    .template-card:hover {
+      border-color: var(--accent-color);
+      box-shadow: 0 2px 8px rgba(102, 102, 102, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .template-card.selected {
+      border-color: var(--accent-color);
+      background: var(--hover-color);
+    }
+
+    .template-title {
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-primary);
+    }
+
+    .template-description {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 13px;
+    }
+
+    .data-table th {
+      background: var(--bg-tertiary);
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .data-table tbody tr:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .status-badge {
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .status-active {
+      background: rgba(40, 167, 69, 0.1);
+      color: #28a745;
+    }
+
+    .status-expired {
+      background: rgba(220, 53, 69, 0.1);
+      color: #dc3545;
+    }
+
+    .result-message {
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+
+    .result-success {
+      background: rgba(40, 167, 69, 0.1);
+      color: #155724;
+      border: 1px solid rgba(40, 167, 69, 0.2);
+    }
+
+    .result-error {
+      background: rgba(220, 53, 69, 0.1);
+      color: #721c24;
+      border: 1px solid rgba(220, 53, 69, 0.2);
+    }
+
+    .actions-bar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .refresh-btn {
+      margin-left: auto;
+      padding: 8px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: var(--text-secondary);
+    }
+
+    .refresh-btn:hover {
+      background: var(--hover-color);
+      transform: rotate(180deg);
+      color: var(--text-primary);
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 1000;
+      transform: translateX(400px);
+      transition: transform 0.3s ease;
+    }
+
+    .notification.show {
+      transform: translateX(0);
+    }
+
+    .notification.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .notification.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .email-preview-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .email-preview-content {
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      padding: 24px;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+      position: relative;
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .close-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .license-status {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .license-unused {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .license-activated {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+
+    .export-section {
+      padding: 20px;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      margin-top: 20px;
+      border: 1px solid var(--border-color);
+    }
+
+    .export-section h4 {
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      color: var(--text-primary);
+    }
+
+    .export-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .table-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+    }
+
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .pagination-info {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    @media (max-width: 768px) {
+      .admin-container {
+        margin: 15px;
+        padding: 16px;
+      }
+      
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .template-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .nav-tabs {
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <header class="header">
+      <img class="icon" src="../icon.png" alt="AutoNestCut">
+      <div>
+        <h1>AutoNestCut License Administration</h1>
+        <div class="lead">Professional license management and distribution system</div>
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()">Light/Dark</button>
+    </header>
+
+    <nav class="nav-tabs">
+      <div class="nav-tab active" onclick="switchTab('overview')">Overview</div>
+      <div class="nav-tab" onclick="switchTab('generate')">Generate License</div>
+      <div class="nav-tab" onclick="switchTab('gifts')">Gift Distribution</div>
+      <div class="nav-tab" onclick="switchTab('bulk')">Bulk Operations</div>
+      <div class="nav-tab" onclick="switchTab('analytics')">Analytics</div>
+    </nav>
+
+    <div id="overview-tab" class="tab-content active">
+      <div class="actions-bar">
+        <button class="refresh-btn" onclick="refreshDashboard()" title="Refresh Dashboard">↻</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="totalUsers">-</div>
+          <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="activeTrials">-</div>
+          <div class="stat-label">Active Trials</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="fullLicenses">-</div>
+          <div class="stat-label">Full Licenses</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="giftsSent">-</div>
+          <div class="stat-label">Gifts Distributed</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Recent Activity</div>
+        <div class="table-controls">
+          <div class="pagination-info">
+            <span id="paginationInfo">Showing 0 of 0 licenses</span>
+          </div>
+          <div class="pagination-controls">
+            <button class="btn btn-outline" onclick="previousPage()" id="prevBtn" disabled>Previous</button>
+            <span id="pageInfo">Page 1 of 1</span>
+            <button class="btn btn-outline" onclick="nextPage()" id="nextBtn" disabled>Next</button>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Email</th>
+              <th>License Key</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Activation</th>
+              <th>Country</th>
+              <th>Issued Date</th>
+              <th>Expires Date</th>
+              <th>Remaining</th>
+              <th>Actions</th>
+              <th>Contact</th>
+            </tr>
+          </thead>
+          <tbody id="recentActivity">
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="generate-tab" class="tab-content">
+      <div class="section">
+        <div class="section-title">Generate Individual License</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Customer Name</label>
+            <input type="text" id="customerName" placeholder="Full name">
+          </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="customerEmail" placeholder="email@domain.com">
+          </div>
+          <div class="form-group">
+            <label>License Type</label>
+            <select id="licenseType" onchange="toggleCustomDays()">
+              <option value="lifetime">Lifetime License</option>
+              <option value="annual">Annual License</option>
+              <option value="custom">Custom Duration</option>
+            </select>
+          </div>
+          <div class="form-group" id="customDaysGroup" style="display: none;">
+            <label>Custom Days</label>
+            <input type="number" id="customDays" placeholder="Number of days" min="1">
+          </div>
+          <div class="form-group">
+            <label>Campaign Tag (Optional)</label>
+            <input type="text" id="campaignTag" placeholder="e.g., promo-2024">
+          </div>
+        </div>
+        <div class="actions-bar">
+          <button class="btn btn-primary" onclick="generateLicense()">Generate License</button>
+        </div>
+        <div id="generateResult"></div>
+      </div>
+    </div>
+
+    <div id="gifts-tab" class="tab-content">
+      <div class="section">
+        <div class="section-title">Gift License Templates</div>
+        <p>Select a template for different recipient types and marketing campaigns.</p>
+        
+        <div class="template-grid">
+          <div class="template-card" data-template="youtuber">
+            <div class="template-title">Content Creator</div>
+            <div class="template-description">Lifetime license for YouTubers, bloggers, and content creators with promotional materials</div>
+          </div>
+          <div class="template-card" data-template="designer">
+            <div class="template-title">Professional Designer</div>
+            <div class="template-description">Full license for architects, furniture designers, and industry professionals</div>
+          </div>
+          <div class="template-card" data-template="company">
+            <div class="template-title">Business Trial</div>
+            <div class="template-description">Extended 30-day trial for companies, workshops, and commercial evaluation</div>
+          </div>
+          <div class="template-card" data-template="educator">
+            <div class="template-title">Educational License</div>
+            <div class="template-description">Special licensing for teachers, schools, and educational institutions</div>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Recipient Name</label>
+            <input type="text" id="giftName" placeholder="Recipient full name">
+          </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="giftEmail" placeholder="recipient@domain.com">
+          </div>
+          <div class="form-group">
+            <label>Organization (Optional)</label>
+            <input type="text" id="giftCompany" placeholder="Company or channel name">
+          </div>
+          <div class="form-group">
+            <label>Campaign Identifier</label>
+            <input type="text" id="giftCampaign" placeholder="e.g., youtube-outreach-2024">
+          </div>
+          <div class="form-group full-width">
+            <label>Personal Message</label>
+            <textarea id="giftMessage" rows="3" placeholder="Optional personal message to include in the email"></textarea>
+          </div>
+        </div>
+        
+        <div class="actions-bar">
+          <button class="btn btn-outline" onclick="previewGiftEmail()">Preview Email</button>
+          <button class="btn btn-primary" onclick="sendGiftLicense()">Send Gift License</button>
+        </div>
+        
+        <div id="giftResult"></div>
+      </div>
+    </div>
+
+    <div id="bulk-tab" class="tab-content">
+      <div class="section">
+        <div class="section-title">Bulk License Operations</div>
+        <p>Generate and distribute multiple licenses for events, workshops, or campaigns.</p>
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Operation Type</label>
+            <select id="bulkType">
+              <option value="workshop">Workshop Licenses (30-day trial)</option>
+              <option value="event">Event Giveaway (Lifetime)</option>
+              <option value="company">Corporate Licenses (Annual)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Campaign Name</label>
+            <input type="text" id="bulkCampaign" placeholder="e.g., Woodworking Conference 2024">
+          </div>
+          <div class="form-group full-width">
+            <label>Email Addresses (one per line)</label>
+            <textarea id="bulkEmails" rows="8" placeholder="email1@domain.com&#10;email2@domain.com&#10;email3@domain.com"></textarea>
+          </div>
+        </div>
+        
+        <div class="actions-bar">
+          <button class="btn btn-primary" onclick="processBulkLicenses()">Process Bulk Licenses</button>
+        </div>
+        
+        <div id="bulkResult"></div>
+      </div>
+    </div>
+
+    <div id="analytics-tab" class="tab-content">
+      <div class="section">
+        <div class="section-title">Performance Analytics</div>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number" id="conversionRate">-</div>
+            <div class="stat-label">Trial Conversion Rate</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="avgTrialDays">-</div>
+            <div class="stat-label">Average Trial Usage</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="monthlyRevenue">-</div>
+            <div class="stat-label">Monthly Revenue</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="giftConversion">-</div>
+            <div class="stat-label">Gift Conversion Rate</div>
+          </div>
+        </div>
+
+        <div class="export-section">
+          <h4>Data Export</h4>
+          <div class="export-buttons">
+            <button class="btn btn-outline" onclick="exportLicenseData()">Export License Data</button>
+            <button class="btn btn-outline" onclick="exportAnalytics()">Export Analytics</button>
+            <button class="btn btn-outline" onclick="exportGiftCampaigns()">Export Gift Campaigns</button>
+            <button class="btn btn-primary" onclick="exportExcelReport()">📊 Export Excel Report</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Preview Modal -->
+  <div id="emailPreviewModal" class="email-preview-modal">
+    <div class="email-preview-content">
+      <button class="close-btn" onclick="closeEmailPreview()">&times;</button>
+      <h3>Email Preview</h3>
+      <p><strong>Subject:</strong> <span id="previewSubject"></span></p>
+      <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px;">
+        <div id="previewContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let selectedTemplate = null;
+    let allLicenses = [];
+    let currentPage = 1;
+    const itemsPerPage = 25;
+
+    // Theme toggle
+    function toggleTheme() {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? null : 'light';
+      document.documentElement.setAttribute('data-theme', newTheme || 'dark');
+      localStorage.setItem('theme', newTheme || 'dark');
+    }
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+
+    // Tab switching
+    function switchTab(tabName) {
+      document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      event.target.classList.add('active');
+      document.getElementById(tabName + '-tab').classList.add('active');
+    }
+
+    // Template selection
+    document.querySelectorAll('.template-card').forEach(card => {
+      card.addEventListener('click', function() {
+        document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+        this.classList.add('selected');
+        selectedTemplate = this.dataset.template;
+      });
+    });
+
+    // Load dashboard data
+    async function loadDashboard() {
+      try {
+        const response = await fetch(`${API_BASE}/admin/dashboard-pro`);
+        const data = await response.json();
+        
+        document.getElementById('totalUsers').textContent = data.totalUsers;
+        document.getElementById('activeTrials').textContent = data.activeTrials;
+        document.getElementById('fullLicenses').textContent = data.fullLicenses;
+        document.getElementById('giftsSent').textContent = data.giftsSent || 0;
+        
+        // Analytics
+        document.getElementById('conversionRate').textContent = data.conversionRate + '%';
+        document.getElementById('avgTrialDays').textContent = data.avgTrialDays + ' days';
+        document.getElementById('monthlyRevenue').textContent = '$' + data.monthlyRevenue;
+        document.getElementById('giftConversion').textContent = data.giftConversion + '%';
+        
+        // Store all licenses for pagination
+        allLicenses = data.recentActivity;
+        currentPage = 1;
+        renderLicenseTable();
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+      }
+    }
+
+    // Toggle custom days field
+    function toggleCustomDays() {
+      const type = document.getElementById('licenseType').value;
+      const customGroup = document.getElementById('customDaysGroup');
+      customGroup.style.display = type === 'custom' ? 'block' : 'none';
+    }
+
+    // Generate license
+    async function generateLicense() {
+      const name = document.getElementById('customerName').value;
+      const email = document.getElementById('customerEmail').value;
+      const type = document.getElementById('licenseType').value;
+      const campaign_tag = document.getElementById('campaignTag').value;
+      const custom_days = document.getElementById('customDays').value;
+      
+      if (!name || !email) {
+        showResult('generateResult', 'Please fill in all required fields', 'error');
+        return;
+      }
+      
+      if (type === 'custom' && (!custom_days || custom_days < 1)) {
+        showResult('generateResult', 'Please specify valid custom days', 'error');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API_BASE}/admin/generate-license`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, type, campaign_tag, custom_days: parseInt(custom_days) })
+        });
+        
+        const data = await response.json();
+        
+        if (data.license_key) {
+          showResult('generateResult', `License generated successfully: ${data.license_key}`, 'success');
+          showNotification('License generated and email sent', 'success');
+          loadDashboard();
+        } else {
+          showResult('generateResult', data.error, 'error');
+        }
+      } catch (error) {
+        showResult('generateResult', 'Network error occurred', 'error');
+      }
+    }
+
+    // License management
+    async function disableLicense(licenseKey) {
+      if (!confirm('Are you sure you want to disable this license?')) return;
+      
+      try {
+        const response = await fetch(`${API_BASE}/admin/disable-license`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ license_key: licenseKey })
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+          showNotification('License disabled successfully', 'success');
+          // Force immediate refresh to show updated status
+          setTimeout(() => loadDashboard(), 500);
+        } else {
+          showNotification(data.error || 'Failed to disable license', 'error');
+        }
+      } catch (error) {
+        showNotification('Network error: Failed to disable license', 'error');
+      }
+    }
+
+    async function enableLicense(licenseKey) {
+      if (!confirm('Are you sure you want to enable this license?')) return;
+      
+      try {
+        const response = await fetch(`${API_BASE}/admin/enable-license`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ license_key: licenseKey })
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+          showNotification('License enabled successfully', 'success');
+          // Force immediate refresh to show updated status
+          setTimeout(() => loadDashboard(), 500);
+        } else {
+          showNotification(data.error || 'Failed to enable license', 'error');
+        }
+      } catch (error) {
+        showNotification('Network error: Failed to enable license', 'error');
+      }
+    }
+
+    // Gift license functions
+    function previewGiftEmail() {
+      if (!selectedTemplate) {
+        showNotification('Please select a template first', 'error');
+        return;
+      }
+      
+      const name = document.getElementById('giftName').value || 'Recipient';
+      const company = document.getElementById('giftCompany').value;
+      const message = document.getElementById('giftMessage').value;
+      
+      const templates = {
+        youtuber: {
+          subject: 'Special AutoNestCut License for Content Creators',
+          content: `Hi ${name}!<br><br>We're excited to offer you a complimentary lifetime license for AutoNestCut as part of our content creator program.${company ? `<br><br>We love your work on ${company}!` : ''}<br><br>${message || 'This professional SketchUp extension will help you create amazing woodworking content with automated nesting and cut lists.'}<br><br>Your license key: <strong>[LICENSE_KEY]</strong>`
+        },
+        designer: {
+          subject: 'Professional AutoNestCut License',
+          content: `Dear ${name},<br><br>We're pleased to provide you with a professional AutoNestCut license.${company ? `<br><br>For ${company}:` : ''}<br><br>${message || 'This tool will streamline your design workflow with automated material optimization and professional cut lists.'}<br><br>Your license key: <strong>[LICENSE_KEY]</strong>`
+        },
+        company: {
+          subject: 'AutoNestCut Extended Trial',
+          content: `Hello ${name},<br><br>Welcome to your extended 30-day AutoNestCut trial!${company ? `<br><br>For ${company}:` : ''}<br><br>${message || 'Explore all features of our professional nesting and cut list extension for your business needs.'}<br><br>Your trial key: <strong>[LICENSE_KEY]</strong>`
+        },
+        educator: {
+          subject: 'AutoNestCut Educational License',
+          content: `Dear Educator ${name},<br><br>Thank you for your dedication to education! Here's your special AutoNestCut license.${company ? `<br><br>For ${company}:` : ''}<br><br>${message || 'Use this tool to teach students about efficient material usage and professional woodworking practices.'}<br><br>Your license key: <strong>[LICENSE_KEY]</strong>`
+        }
+      };
+      
+      const template = templates[selectedTemplate];
+      showEmailPreview(template.subject, template.content);
+    }
+
+    function showEmailPreview(subject, content) {
+      document.getElementById('previewSubject').textContent = subject;
+      document.getElementById('previewContent').innerHTML = content;
+      document.getElementById('emailPreviewModal').style.display = 'flex';
+    }
+
+    function closeEmailPreview() {
+      document.getElementById('emailPreviewModal').style.display = 'none';
+    }
+
+    function showNotification(message, type) {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => notification.classList.add('show'), 100);
+      setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => document.body.removeChild(notification), 300);
+      }, 3000);
+    }
+
+    function refreshDashboard() {
+      // Clear existing data first
+      document.getElementById('totalUsers').textContent = 'Loading...';
+      document.getElementById('activeTrials').textContent = 'Loading...';
+      document.getElementById('fullLicenses').textContent = 'Loading...';
+      document.getElementById('giftsSent').textContent = 'Loading...';
+      document.getElementById('recentActivity').innerHTML = '<tr><td colspan="10">Loading...</td></tr>';
+      
+      // Force reload dashboard data
+      loadDashboard().then(() => {
+        showNotification('Dashboard refreshed successfully', 'success');
+      }).catch(() => {
+        showNotification('Failed to refresh dashboard', 'error');
+      });
+    }
+
+    async function sendGiftLicense() {
+      if (!selectedTemplate) {
+        showNotification('Please select a template first', 'error');
+        return;
+      }
+      
+      const name = document.getElementById('giftName').value;
+      const email = document.getElementById('giftEmail').value;
+      const company = document.getElementById('giftCompany').value;
+      const campaign = document.getElementById('giftCampaign').value;
+      const message = document.getElementById('giftMessage').value;
+      
+      if (!name || !email) {
+        showNotification('Please fill in name and email', 'error');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API_BASE}/admin/send-gift-license`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name, email, company, campaign, message,
+            template: selectedTemplate
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.license_key) {
+          showResult('giftResult', `Gift license sent successfully: ${data.license_key}`, 'success');
+          showNotification('Gift license sent successfully', 'success');
+          loadDashboard();
+        } else {
+          showResult('giftResult', data.error, 'error');
+        }
+      } catch (error) {
+        showResult('giftResult', 'Network error occurred', 'error');
+      }
+    }
+
+    // Bulk operations
+    async function processBulkLicenses() {
+      const type = document.getElementById('bulkType').value;
+      const emails = document.getElementById('bulkEmails').value.split('\n').filter(e => e.trim());
+      const campaign = document.getElementById('bulkCampaign').value;
+      
+      if (emails.length === 0) {
+        showNotification('Please provide email addresses', 'error');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API_BASE}/admin/bulk-licenses`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, emails, campaign })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          showResult('bulkResult', `Successfully processed ${data.processed} licenses`, 'success');
+          showNotification(`Processed ${data.processed} bulk licenses`, 'success');
+          loadDashboard();
+        } else {
+          showResult('bulkResult', data.error, 'error');
+        }
+      } catch (error) {
+        showResult('bulkResult', 'Network error occurred', 'error');
+      }
+    }
+
+    // Export functions
+    function exportLicenseData() {
+      window.open(`${API_BASE}/admin/export/licenses`, '_blank');
+    }
+
+    function exportAnalytics() {
+      window.open(`${API_BASE}/admin/export/analytics`, '_blank');
+    }
+
+    function exportGiftCampaigns() {
+      window.open(`${API_BASE}/admin/export/gifts`, '_blank');
+    }
+    
+    // Contact functions
+    async function sendRenewalReminder(licenseKey, email, userName) {
+      if (!confirm(`Send renewal reminder to ${userName} (${email})?`)) return;
+      
+      try {
+        const response = await fetch(`${API_BASE}/admin/send-renewal-reminder`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ license_key: licenseKey, email, name: userName })
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+          showNotification('Renewal reminder sent successfully', 'success');
+        } else {
+          showNotification(data.error || 'Failed to send reminder', 'error');
+        }
+      } catch (error) {
+        showNotification('Network error: Failed to send reminder', 'error');
+      }
+    }
+    
+    async function sendGiftToUser(licenseKey, email, userName) {
+      const giftType = prompt('Select gift type:\n1. Extend current license (30 days)\n2. Upgrade to lifetime\n3. Send promotional offer\n\nEnter 1, 2, or 3:');
+      if (!giftType || !['1', '2', '3'].includes(giftType)) return;
+      
+      const giftTypes = {
+        '1': 'extension',
+        '2': 'upgrade', 
+        '3': 'promotional'
+      };
+      
+      try {
+        const response = await fetch(`${API_BASE}/admin/send-user-gift`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            license_key: licenseKey, 
+            email, 
+            name: userName,
+            gift_type: giftTypes[giftType]
+          })
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+          showNotification('Gift sent successfully', 'success');
+          loadDashboard();
+        } else {
+          showNotification(data.error || 'Failed to send gift', 'error');
+        }
+      } catch (error) {
+        showNotification('Network error: Failed to send gift', 'error');
+      }
+    }
+    
+    // Excel export function
+    function exportExcelReport() {
+      showNotification('Generating Excel report...', 'success');
+      window.open(`${API_BASE}/admin/export/excel-report`, '_blank');
+    }
+
+    // Utility function
+    function showResult(elementId, message, type) {
+      const element = document.getElementById(elementId);
+      element.innerHTML = `<div class="result-message result-${type}">${message}</div>`;
+      setTimeout(() => element.innerHTML = '', 5000);
+    }
+
+    // Pagination functions
+    function renderLicenseTable() {
+      const tbody = document.getElementById('recentActivity');
+      tbody.innerHTML = '';
+      
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const pageData = allLicenses.slice(startIndex, endIndex);
+      
+      pageData.forEach(license => {
+        const row = tbody.insertRow();
+        const statusClass = license.status === 'active' ? 'status-active' : 'status-expired';
+        const activationStatus = license.device_hash ? 'activated' : 'unused';
+        const activationClass = license.device_hash ? 'license-activated' : 'license-unused';
+        const isDisabled = license.status === 'disabled';
+        const actionButtons = license.status === 'active' ? 
+          `<button class="btn btn-outline" onclick="disableLicense('${license.license_key}')" style="background: #dc3545; color: white;">Disable</button>` :
+          license.status === 'disabled' ?
+          `<button class="btn btn-outline" onclick="enableLicense('${license.license_key}')" style="background: #28a745; color: white;">Enable</button>` :
+          `<button class="btn btn-outline" onclick="enableLicense('${license.license_key}')">Reactivate</button>`;
+        
+        const contactButtons = `
+          <button class="btn btn-outline" onclick="sendRenewalReminder('${license.license_key}', '${license.email}', '${license.user_name}')" title="Send Renewal Reminder">📧</button>
+          <button class="btn btn-outline" onclick="sendGiftToUser('${license.license_key}', '${license.email}', '${license.user_name}')" title="Send Gift License">🎁</button>
+        `;
+        
+        row.innerHTML = `
+          <td>${license.user_name}</td>
+          <td>${license.email}</td>
+          <td><code>${license.license_key}</code></td>
+          <td>${license.is_trial ? 'Trial' : 'Full'}</td>
+          <td><span class="status-badge ${statusClass}">${license.status}</span></td>
+          <td><span class="license-status ${activationClass}">${activationStatus}</span></td>
+          <td>${license.country || '-'}</td>
+          <td title="${new Date(license.issued_at).toLocaleString()}">${new Date(license.issued_at).toLocaleDateString()}</td>
+          <td title="${license.expires_at ? new Date(license.expires_at).toLocaleString() : 'Never'}">${license.expires_at ? new Date(license.expires_at).toLocaleDateString() : 'Never'}</td>
+          <td>${license.expires_at ? Math.max(0, Math.ceil((new Date(license.expires_at) - new Date()) / (1000 * 60 * 60 * 24))) + ' days' : '∞'}</td>
+          <td>${actionButtons}</td>
+          <td>${contactButtons}</td>
+        `;
+      });
+      
+      // Update pagination info
+      const totalPages = Math.ceil(allLicenses.length / itemsPerPage);
+      document.getElementById('paginationInfo').textContent = 
+        `Showing ${startIndex + 1}-${Math.min(endIndex, allLicenses.length)} of ${allLicenses.length} licenses`;
+      document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+      
+      // Update button states
+      document.getElementById('prevBtn').disabled = currentPage === 1;
+      document.getElementById('nextBtn').disabled = currentPage === totalPages || totalPages === 0;
+    }
+    
+    function previousPage() {
+      if (currentPage > 1) {
+        currentPage--;
+        renderLicenseTable();
+      }
+    }
+    
+    function nextPage() {
+      const totalPages = Math.ceil(allLicenses.length / itemsPerPage);
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderLicenseTable();
+      }
+    }
+
+    // Initialize
+    loadDashboard();
+    setInterval(loadDashboard, 30000); // Auto-refresh every 30 seconds
+  </script>
+</body>
+</html>

@@ -4,6 +4,17 @@ module AutoNestCut
   class ReportGenerator
 
     def generate_report_data(boards, settings = {})
+      puts "DEBUG: ReportGenerator.generate_report_data called with #{boards.length} boards"
+      
+      # Get current global settings
+      current_settings = Config.get_cached_settings
+      currency = current_settings['default_currency'] || settings['default_currency'] || 'USD'
+      units = current_settings['units'] || settings['units'] || 'mm'
+      precision = current_settings['precision'] || settings['precision'] || 1
+      
+      puts "DEBUG: Report settings - currency: #{currency}, units: #{units}, precision: #{precision}"
+      
+      # Keep all data in mm, let frontend handle display conversion
       parts_placed_on_boards = []
       unique_part_types_summary = {}
 
@@ -19,12 +30,16 @@ module AutoNestCut
         board_info = {
           board_number: board_number,
           material: board.material,
-          stock_size: "#{board.stock_width.round(1)}mm x #{board.stock_height.round(1)}mm",
+          stock_size_mm: "#{board.stock_width.round(1)} x #{board.stock_height.round(1)} mm",
+          stock_width: board.stock_width,
+          stock_height: board.stock_height,
           parts_count: board.parts_on_board.length,
-          used_area: board.used_area.round(2),
-          waste_area: board.waste_area.round(2),
+          used_area: board.used_area,
+          waste_area: board.waste_area,
           waste_percentage: board.calculate_waste_percentage,
-          efficiency: board.efficiency_percentage
+          efficiency: board.efficiency_percentage,
+          units: units,
+          precision: precision
         }
         boards_summary << board_info
 
@@ -32,22 +47,28 @@ module AutoNestCut
         board_key = "#{board.material}_#{board.stock_width.round(1)}x#{board.stock_height.round(1)}"
         unique_board_types[board_key] ||= {
           material: board.material,
-          dimensions: "#{board.stock_width.round(1)} x #{board.stock_height.round(1)}mm",
+          dimensions_mm: "#{board.stock_width.round(1)} x #{board.stock_height.round(1)} mm",
+          stock_width: board.stock_width,
+          stock_height: board.stock_height,
           count: 0,
-          total_area: 0.0
+          total_area: 0.0,
+          units: units
         }
         unique_board_types[board_key][:count] += 1
         unique_board_types[board_key][:total_area] += board.total_area
         
-        # Add pricing calculation
+        # Add pricing calculation with currency
         stock_materials = settings['stock_materials'] || {}
         material_info = stock_materials[board.material]
         if material_info && material_info.is_a?(Hash)
           price = material_info['price'] || 0
+          material_currency = material_info['currency'] || currency
           unique_board_types[board_key][:price_per_sheet] = price
+          unique_board_types[board_key][:currency] = material_currency
           unique_board_types[board_key][:total_cost] = unique_board_types[board_key][:count] * price
         else
           unique_board_types[board_key][:price_per_sheet] = 0
+          unique_board_types[board_key][:currency] = currency
           unique_board_types[board_key][:total_cost] = 0
         end
 
@@ -65,12 +86,13 @@ module AutoNestCut
             height: part_instance.height.round(2),
             thickness: part_instance.thickness.round(2),
             material: part_instance.material,
-            area: part_instance.area.round(2),
+            area: part_instance.area.round(precision),
             board_number: board_number,
             position_x: part_instance.x.round(2),
             position_y: part_instance.y.round(2),
             rotated: part_instance.rotated ? "Yes" : "No",
-            grain_direction: part_instance.grain_direction || "Any"
+            grain_direction: part_instance.grain_direction || "Any",
+            units: units
           }
 
           unique_part_types_summary[part_instance.name] ||= {
@@ -81,7 +103,8 @@ module AutoNestCut
             material: part_instance.material,
             grain_direction: part_instance.grain_direction || "Any",
             total_quantity: 0,
-            total_area: 0.0
+            total_area: 0.0,
+            units: units
           }
           unique_part_types_summary[part_instance.name][:total_quantity] += 1
           unique_part_types_summary[part_instance.name][:total_area] += part_instance.area
@@ -93,7 +116,7 @@ module AutoNestCut
       # Calculate total project cost
       total_project_cost = unique_board_types.values.sum { |board| board[:total_cost] || 0 }
 
-      {
+      report_data = {
         parts_placed: parts_placed_on_boards,
         unique_part_types: unique_part_types_summary.values.sort_by { |p| p[:name] },
         unique_board_types: unique_board_types.values.sort_by { |b| b[:material] },
@@ -102,14 +125,40 @@ module AutoNestCut
           total_parts_instances: parts_placed_on_boards.length,
           total_unique_part_types: unique_part_types_summary.keys.length,
           total_boards: boards.length,
-          total_stock_area: overall_total_stock_area.round(2),
-          total_used_area: (overall_total_stock_area - total_waste_area).round(2),
-          total_waste_area: total_waste_area.round(2),
+          total_stock_area: overall_total_stock_area.round(precision),
+          total_used_area: (overall_total_stock_area - total_waste_area).round(precision),
+          total_waste_area: total_waste_area.round(precision),
           overall_waste_percentage: overall_waste_percentage,
-          overall_efficiency: (100.0 - overall_waste_percentage).round(2),
-          total_project_cost: total_project_cost.round(2)
+          overall_efficiency: (100.0 - overall_waste_percentage),
+          total_project_cost: total_project_cost.round(2),
+          currency: currency,
+          units: units,
+          precision: precision
         }
       }
+      
+      puts "DEBUG: Generated report data:"
+      puts "  - Parts placed: #{parts_placed_on_boards.length}"
+      puts "  - Unique part types: #{unique_part_types_summary.keys.length}"
+      puts "  - Boards: #{boards.length}"
+      puts "  - Total project cost: #{total_project_cost}"
+      
+      report_data
+    end
+    
+    def get_unit_factor(units)
+      case units
+      when 'mm'
+        1.0
+      when 'cm'
+        10.0
+      when 'in'
+        25.4
+      when 'ft'
+        304.8
+      else
+        1.0
+      end
     end
 
     def export_csv(filename, report_data)

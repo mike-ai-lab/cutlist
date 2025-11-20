@@ -68,7 +68,8 @@ module AutoNestCut
   end
 
   def self.open_purchase_page
-    UI.messagebox("Purchase AutoNestCut License\n\nEmail: muhamad.shkeir@gmail.com")
+    purchase_url = "https://autonestcutserver-moeshks-projects.vercel.app"
+    UI.openURL(purchase_url)
   end
 
   # This method is the primary entry point for the extension's main functionality.
@@ -79,7 +80,7 @@ module AutoNestCut
     # Check license before allowing extension use
     if defined?(AutoNestCut::LicenseManager)
       unless AutoNestCut::LicenseManager.has_valid_license?
-        AutoNestCut::LicenseManager.show_license_options
+        AutoNestCut::LicenseDialog.show_license_options
         return unless AutoNestCut::LicenseManager.has_valid_license?
       end
 
@@ -124,7 +125,7 @@ module AutoNestCut
       autonest_menu = menu.add_submenu(EXTENSION_NAME) # Use constant for name
 
       # Call the renamed primary function
-      autonest_menu.add_item('Generate Cut List') { ::AutoNestCut.run_extension_feature }
+      autonest_menu.add_item('Generate Cut List') { AutoNestCut.run_extension_feature }
       autonest_menu.add_separator
       autonest_menu.add_item('Documentation - How to...') { AutoNestCut.show_documentation }
 
@@ -133,21 +134,15 @@ module AutoNestCut
         autonest_menu.add_separator
         autonest_menu.add_item('Purchase License') { AutoNestCut.open_purchase_page }
         autonest_menu.add_item('License Info') { AutoNestCut::LicenseDialog.show }
+        autonest_menu.add_item('Trial Status') { AutoNestCut::LicenseDialog.show_trial_status }
       else
         puts "⚠️ LicenseDialog not defined"
-      end
-
-      # Add trial status menu if trial manager is available
-      if defined?(AutoNestCut::TrialManager)
-        autonest_menu.add_item('Trial Status') { AutoNestCut::TrialManager.show_trial_status }
-      else
-        puts "⚠️ TrialManager not defined"
       end
 
       # Create toolbar with icon
       toolbar = UI::Toolbar.new(EXTENSION_NAME) # Use constant for name
       # Call the renamed primary function
-      cmd = UI::Command.new(EXTENSION_NAME) { ::AutoNestCut.run_extension_feature }
+      cmd = UI::Command.new(EXTENSION_NAME) { AutoNestCut.run_extension_feature }
       cmd.tooltip = 'Generate optimized cut lists and nesting diagrams for sheet goods'
       cmd.status_bar_text = 'AutoNestCut - Automated nesting for sheet goods'
 
@@ -177,13 +172,13 @@ module AutoNestCut
     unless defined?(AutoNestCutPowerLoader)
       setup_ui
       
-      if defined?(LicenseManager) && defined?(TrialManager)
-        unless LicenseManager.has_valid_license?
-          LicenseManager.check_existing_trial(false)
+      if defined?(AutoNestCut::LicenseManager) && defined?(AutoNestCut::TrialManager)
+        unless AutoNestCut::LicenseManager.has_valid_license?
+          AutoNestCut::LicenseManager.check_existing_trial(false)
         end
         
-        if TrialManager.trial_active?
-          TrialManager.start_trial_countdown
+        if AutoNestCut::TrialManager.trial_active?
+          AutoNestCut::TrialManager.start_trial_countdown
         end
       end
     end

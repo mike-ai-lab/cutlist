@@ -1,0 +1,43 @@
+# Large files
+*.zip
+*.rbz
+*.skp
+*.log
+*.pdf
+*.JPG
+*.jpg
+*.png
+*.gif
+*.bmp
+
+# Development/temp files
+DEVELOPMENT_FILES/
+.vercel/
+.qodo/
+.amazonq/
+node_modules/
+*.tmp
+*.bak
+*_backup.*
+
+# Sensitive files
+private_key.pem
+.env
+*.pem
+*.key
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test files
+test_*.html
+test_*.js
+*_test.*

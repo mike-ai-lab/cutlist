@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>AutoNestCut</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="diagrams_style.css">
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>AutoNestCut</h1>
+            <p class="developer-credit">Developed by: Int. Arch. M.Shkeir</p>
+        </div>
+        <div class="tabs">
+            <button class="tab-button active" onclick="showTab('config')">Configuration</button>
+            <button class="tab-button" id="reportTab" onclick="showTab('report')" disabled>Report</button>
+        </div>
+    </div>
+
+    <!-- Configuration Tab -->
+    <div id="configTab" class="tab-content active">
+        <div class="config-container">
+            <div class="buttons-top">
+                <button type="button" onclick="processNesting()" class="primary">Generate Cut List</button>
+                <button type="button" onclick="refreshConfiguration()" class="secondary">Refresh Selection</button>
+                <button type="button" onclick="window.close()">Cancel</button>
+            </div>
+            
+            <div class="section">
+                <h2>General Settings</h2>
+                <div class="form-group">
+                    <label for="kerf_width">Kerf Width (mm):</label>
+                    <input type="number" id="kerf_width" name="kerf_width" step="0.1" min="0" max="10">
+                </div>
+                <div class="form-group">
+                    <label for="allow_rotation">
+                        <input type="checkbox" id="allow_rotation" name="allow_rotation"> Allow part rotation
+                    </label>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Stock Materials & Pricing</h2>
+                <div class="materials-controls-group">
+                    <div class="materials-action-buttons">
+                        <button type="button" onclick="addMaterial()" class="material-icon-btn" title="Add Material">
+                            <svg class="material-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            <span>Add</span>
+                        </button>
+                        <button type="button" onclick="loadDefaults()" class="material-icon-btn" title="Load Defaults">
+                            <svg class="material-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                                <path d="M21 3v5h-5"></path>
+                                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                                <path d="M3 21v-5h5"></path>
+                            </svg>
+                            <span>Defaults</span>
+                        </button>
+                        <button type="button" onclick="importCSV()" class="material-icon-btn" title="Import CSV">
+                            <svg class="material-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <span>Import</span>
+                        </button>
+                        <button type="button" onclick="exportDatabase()" class="material-icon-btn" title="Export Database">
+                            <svg class="material-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            <span>Export</span>
+                        </button>
+                    </div>
+                    <div class="materials-sort-controls">
+                        <select id="sortBy" onchange="displayMaterials()" class="sort-select">
+                            <option value="alphabetical">Sort: A-Z</option>
+                            <option value="usage">Sort: Used First</option>
+                            <option value="mostUsed">Sort: Most Used</option>
+                        </select>
+                    </div>
+                    <div class="materials-filter-buttons">
+                        <button type="button" id="foldToggle" onclick="toggleFold()" class="material-icon-btn" title="Show Used Only">
+                            <svg class="material-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <span>Used Only</span>
+                        </button>
+                        <button type="button" onclick="clearHighlight()" class="material-icon-btn" title="Clear Highlight">
+                            <svg class="material-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
+                            <span>Clear</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="materials-header">
+                    <span>Material Name</span>
+                    <span>Width (mm)</span>
+                    <span>Height (mm)</span>
+                    <span>Price</span>
+                    <span>Actions</span>
+                    <span>Status</span>
+                </div>
+                <div id="materials_list" class="materials-list"></div>
+            </div>
+            
+            <div class="section">
+                <h2>Parts Preview</h2>
+                <div id="parts_preview"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Tab -->
+    <div id="reportTabContent" class="tab-content">
+        <div class="report-header">
+            <button id="refreshReportButton" class="icon-export-btn" title="Refresh Report" onclick="refreshReport()">
+                <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                    <path d="M21 3v5h-5"></path>
+                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                    <path d="M3 21v-5h5"></path>
+                </svg>
+                <span class="export-label">Refresh</span>
+            </button>
+            <button id="printButton" class="icon-export-btn" title="Print / Save as PDF">
+                <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                <span class="export-label">PDF</span>
+            </button>
+            <button id="exportCsvButton" class="icon-export-btn" title="Export CSV Report">
+                <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                    <polyline points="13 2 13 9 20 9"></polyline>
+                    <line x1="9" y1="13" x2="15" y2="13"></line>
+                    <line x1="9" y1="17" x2="15" y2="17"></line>
+                </svg>
+                <span class="export-label">CSV</span>
+            </button>
+            <button id="exportHtmlButton" class="icon-export-btn" title="Export Interactive HTML">
+                <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+                <span class="export-label">HTML</span>
+            </button>
+        </div>
+
+        <div class="container">
+            <div id="diagramsContainer" class="diagrams-container">
+                <h2>Diagrams</h2>
+                <p>Generate a report to view diagrams...</p>
+            </div>
+            <div class="resizer" id="resizer"></div>
+            <div id="reportContainer" class="report-container">
+                <div class="report-title">
+                    <h2>Report Details</h2>
+                </div>
+                
+                <div class="project-info">
+                    <div class="project-field">
+                        <label for="projectName">Project Name:</label>
+                        <input type="text" id="projectName" name="projectName" placeholder="Enter project name">
+                    </div>
+                    <div class="project-field">
+                        <label for="projectAddress">Address:</label>
+                        <input type="text" id="projectAddress" name="projectAddress" placeholder="Enter project address">
+                    </div>
+                    <div class="project-field">
+                        <label for="projectDate">Date:</label>
+                        <input type="date" id="projectDate" name="projectDate">
+                    </div>
+                </div>
+
+                <h2>Materials Used</h2>
+                <div id="materialsContainer"></div>
+
+                <h2>Overall Summary</h2>
+                <table id="summaryTable"></table>
+
+                <h2>Unique Part Types</h2>
+                <table id="uniquePartTypesTable"></table>
+
+                <h2>Unique Board Types</h2>
+                <table id="uniqueBoardTypesTable"></table>
+
+                <h2>Boards Summary</h2>
+                <table id="boardsTable"></table>
+
+                <h2>Parts Placed (Detailed)</h2>
+                <div class="tree-controls">
+                    <button type="button" id="treeToggle" onclick="toggleTreeView()">Show Tree Structure</button>
+                    <div class="tree-search" id="treeSearchContainer" style="display: none;">
+                        <input type="text" id="treeSearch" placeholder="Search components..." oninput="filterTree()">
+                        <button type="button" onclick="clearTreeSearch()">Clear</button>
+                        <button type="button" onclick="expandAll()">Expand All</button>
+                        <button type="button" onclick="collapseAll()">Collapse All</button>
+                    </div>
+                </div>
+                <div id="treeStructure" class="tree-structure" style="display: none;"></div>
+                <table id="partsTable"></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for enlarged part view -->
+    <div id="partModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="modal-controls">
+                <button id="projectionToggle">Orthographic</button>
+            </div>
+            <canvas id="modalCanvas" width="500" height="400"></canvas>
+            <div id="modalInfo"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="app.js"></script>
+    <script src="diagrams_report.js"></script>
+    <script>
+        let currentReportData = null;
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            
+            if (tabName === 'config') {
+                document.getElementById('configTab').classList.add('active');
+            } else if (tabName === 'report') {
+                document.getElementById('reportTabContent').classList.add('active');
+            }
+            document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
+        }
+
+        function showReportTab(data) {
+            document.getElementById('reportTab').disabled = false;
+            currentReportData = data;
+            g_boardsData = data.diagrams;
+            g_reportData = data.report;
+            window.originalComponents = data.original_components || [];
+            window.hierarchyTree = data.hierarchy_tree || [];
+            
+            // Set current date as default
+            document.getElementById('projectDate').value = new Date().toISOString().split('T')[0];
+            
+            renderDiagrams();
+            renderReport();
+            showTab('report');
+            
+            // Initialize export button event listeners only once
+            initializeExportButtons();
+            
+            // Re-initialize resizer after showing report tab
+            setTimeout(() => {
+                resizerInitialized = false;
+                initResizer();
+            }, 100);
+        }
+        
+        let exportButtonsInitialized = false;
+        
+        function initializeExportButtons() {
+            if (exportButtonsInitialized) return;
+            
+            const printBtn = document.getElementById('printButton');
+            const exportCsvBtn = document.getElementById('exportCsvButton');
+            const exportHtmlBtn = document.getElementById('exportHtmlButton');
+            
+            if (printBtn) {
+                printBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    exportToPDF();
+                });
+            }
+            
+            if (exportCsvBtn) {
+                exportCsvBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (currentReportData && currentReportData.report) {
+                        callRuby('export_csv', JSON.stringify(currentReportData.report));
+                    } else {
+                        alert('No report data available for export.');
+                    }
+                });
+            }
+            
+            if (exportHtmlBtn) {
+                exportHtmlBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (typeof exportInteractiveHTML === 'function') {
+                        exportInteractiveHTML();
+                    } else {
+                        alert('HTML export feature is not available.');
+                    }
+                });
+            }
+            
+            exportButtonsInitialized = true;
+        }
+        
+        function exportToPDF() {
+            const modelName = document.title || 'Untitled';
+            const timestamp = new Date().toISOString().slice(0,10);
+            const filename = `AutoNestCut_Report_${modelName.replace(/[^\w]/g, '_')}_${timestamp}`;
+            
+            document.title = filename;
+            window.print();
+        }
+
+        function showError(message) {
+            alert(message);
+        }
+        
+        function refreshConfiguration() {
+            callRuby('refresh_config');
+        }
+        
+        function refreshReport() {
+            callRuby('refresh_report');
+        }
+        
+        function receiveRefreshedData(data) {
+            // Update the configuration with refreshed data
+            receiveInitialData(data);
+        }
+        
+        function refreshReportWithCurrentSettings() {
+            // Get current settings from the form
+            const settings = getCurrentSettings();
+            if (settings) {
+                // Re-process with current settings
+                callRuby('process', JSON.stringify(settings));
+            }
+        }
+        
+        function showConfigTab() {
+            showTab('config');
+        }
+        
+        function toggleTreeView() {
+            showTreeView = !showTreeView;
+            const button = document.getElementById('treeToggle');
+            const treeContainer = document.getElementById('treeStructure');
+            const searchContainer = document.getElementById('treeSearchContainer');
+            
+            if (showTreeView) {
+                button.textContent = 'Hide Tree Structure';
+                treeContainer.style.display = 'block';
+                searchContainer.style.display = 'flex';
+                renderTreeStructure();
+            } else {
+                button.textContent = 'Show Tree Structure';
+                treeContainer.style.display = 'none';
+                searchContainer.style.display = 'none';
+            }
+        }
+        
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const modal = document.getElementById('partModal');
+            const closeBtn = document.querySelector('.close');
+            
+            closeBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+            
+            window.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+
+            // Initialize resizer with a delay to ensure DOM is ready
+            setTimeout(() => {
+                initResizer();
+            }, 100);
+            callRuby('ready');
+        });
+    </script>
+</body>
+</html>

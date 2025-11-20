@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>AutoNestCut Documentation</title>
+    <link rel="stylesheet" href="diagrams_style.css">
+    <style>
+        .doc-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .doc-section {
+            margin-bottom: 30px;
+        }
+        .doc-section h2 {
+            color: #007bff;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .step-list {
+            counter-reset: step-counter;
+        }
+        .step-list li {
+            counter-increment: step-counter;
+            margin-bottom: 15px;
+            padding-left: 30px;
+            position: relative;
+        }
+        .step-list li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #007bff;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .feature-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .footer {
+            background: #333;
+            color: white;
+            padding: 30px 20px;
+            margin-top: 40px;
+            border-radius: 8px;
+        }
+        .footer h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .social-links {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .social-links a {
+            color: #007bff;
+            text-decoration: none;
+            padding: 8px 12px;
+            background: rgba(0,123,255,0.1);
+            border-radius: 4px;
+            transition: background 0.3s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .social-links a:hover {
+            background: rgba(0,123,255,0.2);
+        }
+        .bug-report {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
+        }
+        .bug-form {
+            display: grid;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .bug-form input, .bug-form textarea {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+        .bug-form button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .bug-form button:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>AutoNestCut Documentation</h1>
+            <p class="developer-credit">Developed by: Int. Arch. M.Shkeir</p>
+        </div>
+    </div>
+
+    <div class="doc-container">
+        <div class="doc-section">
+            <h2>Overview</h2>
+            <p>AutoNestCut is a professional SketchUp extension designed for woodworkers, furniture makers, and architects who need to optimize material usage and generate cutting diagrams for sheet goods. The extension automatically analyzes your 3D model components and creates efficient nesting layouts to minimize waste and reduce costs.</p>
+        </div>
+
+        <div class="doc-section">
+            <h2>Key Features</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Automatic Part Detection</h4>
+                    <p>Intelligently identifies sheet good components in your model based on dimensions and thickness.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Material Management</h4>
+                    <p>Configure stock materials with custom dimensions and pricing for accurate cost calculations.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Optimized Nesting</h4>
+                    <p>Advanced algorithms minimize waste by efficiently arranging parts on stock sheets.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Visual Diagrams</h4>
+                    <p>Generate clear cutting diagrams with part labels and dimensions for workshop use.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Detailed Reports</h4>
+                    <p>Comprehensive reports with material lists, costs, and efficiency metrics.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Export Options</h4>
+                    <p>Export to PDF, CSV, or interactive HTML formats for sharing and documentation.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="doc-section">
+            <h2>How to Use AutoNestCut</h2>
+            
+            <div class="image-container" style="text-align: center; margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                <div style="background: #fff; padding: 10px; border-radius: 4px; display: inline-block;">
+                    <img src="images/kitchen_cabinets_model_showcase.JPG" alt="Kitchen Cabinet Model Example" style="max-width: 600px; height: auto; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div style="display: none; width: 600px; height: 400px; background: #e9ecef; border: 2px dashed #6c757d; align-items: center; justify-content: center; color: #6c757d; font-size: 14px;">Kitchen Cabinet Model Example<br><small>(Image not found: kitchen_cabinets_model_showcase.JPG)</small></div>
+                </div>
+                <p style="font-style: italic; color: #666; margin-top: 10px;">Example: Kitchen cabinet model ready for cut list generation</p>
+            </div>
+            
+            <ol class="step-list">
+                <li><strong>Prepare Your Model:</strong> Create your furniture or project in SketchUp using components for each part. Ensure sheet good parts have realistic thickness (3-50mm) and sufficient area.</li>
+                <li><strong>Select Components:</strong> Select the components or groups you want to include in your cutting list. You can select individual parts or entire assemblies.</li>
+                <li><strong>Launch Extension:</strong> Go to Extensions > AutoNestCut or click the toolbar button to open the configuration window.</li>
+                <li><strong>Configure Settings:</strong> Set your kerf width (saw blade thickness) and choose whether to allow part rotation for better nesting.</li>
+                <li><strong>Setup Materials:</strong> Add or modify stock materials with their dimensions and prices. The extension will automatically detect materials from your model.
+                    <div class="image-container" style="text-align: center; margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                        <div style="background: #fff; padding: 8px; border-radius: 4px; display: inline-block;">
+                            <div style="width: 400px; height: 250px; background: #e9ecef; border: 2px dashed #6c757d; display: flex; align-items: center; justify-content: center; color: #6c757d; font-size: 12px;">Stock Materials Configuration<br><small>(Image placeholder - configure materials in extension)</small></div>
+                        </div>
+                        <p style="font-style: italic; color: #666; margin-top: 5px; font-size: 0.9em;">Configure materials with dimensions and pricing</p>
+                    </div>
+                </li>
+                <li><strong>Review Parts:</strong> Check the parts preview to ensure all components are detected correctly with proper dimensions.</li>
+                <li><strong>Generate Report:</strong> Click "Generate Cut List" to process the nesting optimization and switch to the report tab.</li>
+                <li><strong>Review Results:</strong> Examine the cutting diagrams and detailed reports. Add project information like name, address, and date.
+                    <div class="image-container" style="text-align: center; margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                        <div style="background: #fff; padding: 8px; border-radius: 4px; display: inline-block;">
+                            <img src="images/diagram_example.JPG" alt="Cutting Diagram Example" style="max-width: 500px; height: auto; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div style="display: none; width: 500px; height: 300px; background: #e9ecef; border: 2px dashed #6c757d; align-items: center; justify-content: center; color: #6c757d; font-size: 12px;">Cutting Diagram Example<br><small>(Image not found: diagram_example.JPG)</small></div>
+                        </div>
+                        <p style="font-style: italic; color: #666; margin-top: 5px; font-size: 0.9em;">Generated cutting diagrams with part labels and dimensions</p>
+                    </div>
+                </li>
+                <li><strong>Export:</strong> Save your results as PDF for printing, CSV for spreadsheets, or HTML for interactive viewing.</li>
+            </ol>
+        </div>
+
+        <div class="doc-section">
+            <h2>Configuration Options</h2>
+            <h3>General Settings</h3>
+            <ul>
+                <li><strong>Kerf Width:</strong> The thickness of your saw blade cut (typically 2-4mm). This ensures proper spacing between parts.</li>
+                <li><strong>Allow Rotation:</strong> Permits the algorithm to rotate parts for better nesting efficiency, unless grain direction is specified.</li>
+            </ul>
+            
+            <h3>Stock Materials</h3>
+            <ul>
+                <li><strong>Material Name:</strong> Descriptive name for the material (e.g., "Plywood_19mm", "Oak_Veneer")</li>
+                <li><strong>Dimensions:</strong> Width and height of standard stock sheets in millimeters</li>
+                <li><strong>Price:</strong> Cost per sheet for accurate project costing</li>
+            </ul>
+        </div>
+
+        <div class="doc-section">
+            <h2>Understanding Reports</h2>
+            <h3>Materials Used</h3>
+            <p>Shows all materials in your project with their associated costs.</p>
+            
+            <h3>Overall Summary</h3>
+            <p>Key metrics including total parts, boards needed, efficiency percentage, and total project cost.</p>
+            
+            <h3>Cutting Diagrams</h3>
+            <p>Visual layouts showing how parts are arranged on each sheet, with part labels and dimensions. Click on any part to view it in 3D:</p>
+            
+            <div style="display: flex; gap: 20px; margin: 20px 0; justify-content: center;">
+                <div class="image-container" style="text-align: center; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                    <div style="background: #fff; padding: 8px; border-radius: 4px;">
+                        <div style="width: 200px; height: 150px; background: #e9ecef; border: 2px dashed #6c757d; display: flex; align-items: center; justify-content: center; color: #6c757d; font-size: 10px;">Orthographic 3D View<br><small>(Click parts in diagrams)</small></div>
+                    </div>
+                    <p style="font-style: italic; color: #666; margin-top: 5px; font-size: 0.8em;">Orthographic 3D view</p>
+                </div>
+                <div class="image-container" style="text-align: center; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                    <div style="background: #fff; padding: 8px; border-radius: 4px;">
+                        <div style="width: 200px; height: 150px; background: #e9ecef; border: 2px dashed #6c757d; display: flex; align-items: center; justify-content: center; color: #6c757d; font-size: 10px;">Perspective 3D View<br><small>(Click parts in diagrams)</small></div>
+                    </div>
+                    <p style="font-style: italic; color: #666; margin-top: 5px; font-size: 0.8em;">Perspective 3D view</p>
+                </div>
+            </div>
+            
+            <h3>Detailed Tables</h3>
+            <ul>
+                <li><strong>Unique Part Types:</strong> List of different parts with quantities and total areas</li>
+                <li><strong>Board Types:</strong> Summary of different sheet materials and quantities needed</li>
+                <li><strong>Parts Placed:</strong> Complete list of every part instance with board assignments</li>
+            </ul>
+        </div>
+
+        <div class="doc-section">
+            <h2>Export Formats</h2>
+            <p>AutoNestCut supports multiple export formats to suit different workflows:</p>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>📄 PDF Export</h4>
+                    <p>Perfect for printing workshop diagrams and documentation. Includes all cutting layouts and part lists.</p>
+                    <div style="background: #fff3cd; padding: 10px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #ffc107;">
+                        <strong>Example File:</strong> pdf_output_example.pdf<br>
+                        <small>Contains complete cutting diagrams and part lists ready for printing</small>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <h4>📊 CSV Export</h4>
+                    <p>Spreadsheet-compatible format for inventory management and cost analysis.</p>
+                    <div style="background: #d1ecf1; padding: 10px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #17a2b8;">
+                        <strong>Example File:</strong> Cutting_List_cutlist_model_10.csv<br>
+                        <small>Structured data for Excel, Google Sheets, or database import</small>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <h4>🌐 Interactive HTML</h4>
+                    <p>Fully interactive report with 3D part views and resizable diagrams for digital sharing.</p>
+                    <div style="background: #d4edda; padding: 10px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #28a745;">
+                        <strong>Example File:</strong> AutoNestCut_Interactive_Report.html<br>
+                        <small>Self-contained interactive report with 3D visualization</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="doc-section">
+            <h2>Performance Optimizations</h2>
+            <p>AutoNestCut includes advanced performance optimizations to ensure smooth operation even with complex models:</p>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>⚡ Material Caching</h4>
+                    <p>Intelligent caching system stores material lookups to eliminate repeated expensive operations during processing.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🔄 Single-Pass Processing</h4>
+                    <p>Optimized algorithms process components in a single iteration, reducing processing time from ~10 seconds to under 1 second.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🎯 Selective Entity Search</h4>
+                    <p>Focuses only on selected entities instead of searching the entire model, dramatically improving performance with large projects.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="doc-section">
+            <h2>Tips for Best Results</h2>
+            <ul>
+                <li>Model parts as separate components with realistic dimensions</li>
+                <li>Use consistent naming conventions for similar parts</li>
+                <li>Set appropriate grain direction attributes for wood parts</li>
+                <li>Verify material assignments before generating reports</li>
+                <li>Consider kerf width when setting up your stock materials</li>
+                <li>Review the parts preview to catch any detection issues</li>
+                <li><strong>Performance:</strong> For large models, select only the components you need to process rather than the entire model</li>
+            </ul>
+        </div>
+
+        <div class="doc-section">
+            <h2>Troubleshooting</h2>
+            <h3>Parts Not Detected</h3>
+            <ul>
+                <li>Ensure parts are modeled as components, not loose geometry</li>
+                <li>Check that thickness is between 3-50mm</li>
+                <li>Verify minimum area requirements are met</li>
+            </ul>
+            
+            <h3>Poor Nesting Results</h3>
+            <ul>
+                <li>Enable rotation if grain direction allows</li>
+                <li>Adjust stock sheet sizes to better match your parts</li>
+                <li>Consider breaking large assemblies into individual parts</li>
+            </ul>
+            
+            <h3>Performance Issues</h3>
+            <ul>
+                <li><strong>Slow Processing:</strong> The extension now includes automatic performance optimizations that reduce processing time by up to 90%</li>
+                <li><strong>Memory Usage:</strong> Caching systems are automatically cleared between sessions to prevent memory buildup</li>
+                <li><strong>Large Models:</strong> Select specific components rather than entire complex assemblies for faster processing</li>
+                <li><strong>Extension Reload:</strong> If experiencing issues after updates, reload the extension using the Ruby Console</li>
+            </ul>
+        </div>
+
+        <div class="bug-report">
+            <h3>🐛 Report a Bug</h3>
+            <p>Found an issue? Help us improve AutoNestCut by reporting bugs:</p>
+            <form class="bug-form" onsubmit="submitBugReport(event)">
+                <input type="text" id="bugTitle" placeholder="Brief description of the issue" required>
+                <textarea id="bugDescription" rows="4" placeholder="Detailed description of what happened, steps to reproduce, and expected behavior" required></textarea>
+                <input type="email" id="bugEmail" placeholder="Your email (optional, for follow-up)">
+                <button type="submit">Send Bug Report</button>
+            </form>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #007bff; text-align: center;">
+            <h3 style="margin-top: 0; color: #007bff;">💳 Purchase AutoNestCut License</h3>
+            <p style="color: #333; margin-bottom: 15px;">Get the full version with all features and lifetime updates!</p>
+            <button onclick="openPurchasePage()" style="background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: 500;">Purchase License</button>
+        </div>
+    </div>
+
+    <div class="footer">
+        <h3>Connect with Int. Arch. Moe Shkeir</h3>
+        <div class="social-links">
+            <a href="https://www.behance.net/muhamadshkeir" target="_blank">Behance</a>
+            <a href="https://www.instagram.com/muhamad.a.shk/" target="_blank">Instagram</a>
+            <a href="https://www.instagram.com/archi4.design/" target="_blank">Business</a>
+            <a href="http://www.linkedin.com/in/muhammad-s-shkeir" target="_blank">LinkedIn</a>
+            <a href="mailto:muhamad.shkeir@gmail.com">Email</a>
+        </div>
+        <p style="margin-top: 20px; font-size: 0.9em; opacity: 0.8;">
+            © 2024 AutoNestCut Extension. Developed with passion for efficient woodworking and design.
+        </p>
+    </div>
+
+    <script>
+        function submitBugReport(event) {
+            event.preventDefault();
+            
+            const title = document.getElementById('bugTitle').value;
+            const description = document.getElementById('bugDescription').value;
+            const email = document.getElementById('bugEmail').value;
+            
+            const subject = encodeURIComponent(`AutoNestCut Bug Report: ${title}`);
+            const body = encodeURIComponent(`Bug Description:\n${description}\n\nReporter Email: ${email}\n\nSketchUp Version: ${navigator.userAgent}\nDate: ${new Date().toISOString()}`);
+            
+            const mailtoLink = `mailto:muhamad.shkeir@gmail.com?subject=${subject}&body=${body}`;
+            window.open(mailtoLink);
+            
+            alert('Bug report email opened. Please send the email to complete the report.');
+            document.querySelector('.bug-form').reset();
+        }
+        
+        function openPurchasePage() {
+            window.open('https://autonestcutserver-3srrv5rok-moeshks-projects.vercel.app/', '_blank');
+        }
+    </script>
+</body>
+</html>

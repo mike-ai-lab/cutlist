@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Purchase AutoNestCut License</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        h1 { color: #333; text-align: center; margin-bottom: 30px; }
+        .pricing { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 30px 0; }
+        .plan { border: 2px solid #e0e0e0; border-radius: 8px; padding: 20px; text-align: center; transition: all 0.3s; }
+        .plan:hover { border-color: #007cba; transform: translateY(-5px); }
+        .plan.popular { border-color: #007cba; background: #f8f9ff; }
+        .plan h3 { margin: 0 0 10px 0; color: #007cba; }
+        .plan .price { font-size: 2em; font-weight: bold; color: #333; margin: 10px 0; }
+        .plan .features { list-style: none; padding: 0; margin: 20px 0; }
+        .plan .features li { padding: 5px 0; color: #666; }
+        .btn { display: block; width: 100%; padding: 12px; background: #007cba; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; margin-top: 20px; }
+        .btn:hover { background: #005a87; }
+        .btn.secondary { background: #6c757d; }
+        .btn.secondary:hover { background: #545b62; }
+        .form-section { margin-top: 40px; padding-top: 30px; border-top: 2px solid #e0e0e0; }
+        .form-group { margin: 20px 0; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+        input { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 16px; }
+        input:focus { border-color: #007cba; outline: none; }
+        .success { background: #d4edda; color: #155724; padding: 15px; border-radius: 6px; margin: 20px 0; }
+        .error { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 6px; margin: 20px 0; }
+        .contact-info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 30px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 AutoNestCut License</h1>
+        <p style="text-align: center; color: #666; font-size: 18px;">Professional SketchUp extension for automated nesting and cutting optimization</p>
+        
+        <div class="pricing">
+            <div class="plan">
+                <h3>Annual License</h3>
+                <div class="price">$99</div>
+                <ul class="features">
+                    <li>✅ 1 Year of Updates</li>
+                    <li>✅ Email Support</li>
+                    <li>✅ Single Device</li>
+                    <li>✅ Commercial Use</li>
+                </ul>
+                <button class="btn secondary" onclick="selectPlan('annual')">Select Annual</button>
+            </div>
+            
+            <div class="plan popular">
+                <h3>Lifetime License</h3>
+                <div class="price">$199</div>
+                <ul class="features">
+                    <li>✅ Lifetime Updates</li>
+                    <li>✅ Priority Support</li>
+                    <li>✅ Single Device</li>
+                    <li>✅ Commercial Use</li>
+                    <li>🔥 <strong>Most Popular</strong></li>
+                </ul>
+                <button class="btn" onclick="selectPlan('lifetime')">Select Lifetime</button>
+            </div>
+        </div>
+        
+        <div class="form-section" id="purchaseForm" style="display: none;">
+            <h2>Complete Your Purchase</h2>
+            <p>Selected: <strong id="selectedPlan"></strong></p>
+            
+            <div class="form-group">
+                <label>Full Name:</label>
+                <input type="text" id="customerName" placeholder="Enter your full name" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Email Address:</label>
+                <input type="email" id="customerEmail" placeholder="Enter your email address" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Company (Optional):</label>
+                <input type="text" id="customerCompany" placeholder="Enter your company name">
+            </div>
+            
+            <button class="btn" onclick="submitPurchase()">Request License Key</button>
+            
+            <div id="purchaseResult"></div>
+        </div>
+        
+        <div class="contact-info">
+            <h3>Need Help?</h3>
+            <p>Contact us for custom licensing or enterprise solutions:</p>
+            <p><strong>Email:</strong> muhamad.shkeir@gmail.com</p>
+            <p><strong>Response Time:</strong> Within 24 hours</p>
+        </div>
+    </div>
+
+    <script>
+        let selectedLicenseType = '';
+        
+        function selectPlan(type) {
+            selectedLicenseType = type;
+            document.getElementById('selectedPlan').textContent = type === 'lifetime' ? 'Lifetime License ($199)' : 'Annual License ($99)';
+            document.getElementById('purchaseForm').style.display = 'block';
+            document.getElementById('purchaseForm').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        async function submitPurchase() {
+            const name = document.getElementById('customerName').value.trim();
+            const email = document.getElementById('customerEmail').value.trim();
+            const company = document.getElementById('customerCompany').value.trim();
+            
+            if (!name || !email) {
+                document.getElementById('purchaseResult').innerHTML = '<div class="error">Please fill in all required fields.</div>';
+                return;
+            }
+            
+            const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+            if (!emailRegex.test(email)) {
+                document.getElementById('purchaseResult').innerHTML = '<div class="error">Please enter a valid email address.</div>';
+                return;
+            }
+            
+            try {
+                // In a real implementation, this would go to a payment processor first
+                // For now, we'll send the request directly to generate the license
+                const response = await fetch('/admin/generate-license', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        name: company ? `${name} (${company})` : name, 
+                        email: email, 
+                        type: selectedLicenseType 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.license_key) {
+                    document.getElementById('purchaseResult').innerHTML = `
+                        <div class="success">
+                            <h3>🎉 License Generated Successfully!</h3>
+                            <p><strong>Your License Key:</strong> <code style="background: #fff; padding: 5px; border-radius: 3px;">${data.license_key}</code></p>
+                            <p>📧 We've also sent this license key to your email address.</p>
+                            <p><strong>Next Steps:</strong></p>
+                            <ol>
+                                <li>Open SketchUp</li>
+                                <li>Load the AutoNestCut extension</li>
+                                <li>Enter your license key when prompted</li>
+                            </ol>
+                            <p>Thank you for your purchase! 🚀</p>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('purchaseResult').innerHTML = `<div class="error">Error: ${data.error || 'Failed to generate license'}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('purchaseResult').innerHTML = `<div class="error">Network error. Please try again or contact support.</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

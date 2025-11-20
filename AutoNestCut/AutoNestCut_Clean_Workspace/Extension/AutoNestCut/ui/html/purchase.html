@@ -5,21 +5,146 @@
     <title>AutoNestCut - Purchase License</title>
     <script id="paypal-sdk"></script>
     <style>
+        :root {
+            --gitbook-primary: #3b82f6;
+            --gitbook-primary-dark: #2563eb;
+            --gitbook-success: #10b981;
+            --gitbook-success-dark: #059669;
+            --gitbook-bg: #ffffff;
+            --gitbook-sidebar: #f8fafc;
+            --gitbook-border: #e2e8f0;
+            --gitbook-text: #1e293b;
+            --gitbook-text-muted: #64748b;
+            --gitbook-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: var(--gitbook-bg);
+            color: var(--gitbook-text);
+            line-height: 1.7;
+            font-size: 15px;
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: var(--gitbook-sidebar);
+            border-right: 1px solid var(--gitbook-border);
+            padding: 24px 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+        
+        .sidebar-header {
+            padding: 0 24px 24px;
+            border-bottom: 1px solid var(--gitbook-border);
+            margin-bottom: 24px;
+        }
+        
+        .sidebar-header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gitbook-text);
+            letter-spacing: -0.025em;
+        }
+        
+        .sidebar-header .developer-credit {
+            margin: 8px 0 0 0;
+            font-size: 13px;
+            color: var(--gitbook-text-muted);
+            font-weight: 500;
+        }
+        
+        .nav-menu {
+            padding: 0 16px;
+        }
+        
+        .nav-item {
+            margin-bottom: 4px;
+        }
+        
+        .nav-link {
+            display: block;
+            padding: 8px 16px;
+            color: var(--gitbook-text-muted);
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            background: var(--gitbook-primary);
+            color: white;
+        }
+        
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 0;
+        }
+        
+        .content-header {
+            background: var(--gitbook-bg);
+            border-bottom: 1px solid var(--gitbook-border);
+            padding: 20px 40px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(8px);
+        }
+        
+        .content-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--gitbook-text);
+            letter-spacing: -0.025em;
+        }
+        
         .doc-container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin: 0;
+            padding: 40px;
+            background: var(--gitbook-bg);
+            min-height: calc(100vh - 80px);
         }
         .doc-section {
             margin-bottom: 30px;
         }
         .doc-section h2 {
-            color: #007bff;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
+            color: var(--gitbook-text);
+            border-bottom: 1px solid var(--gitbook-border);
+            padding-bottom: 16px;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            margin: 48px 0 24px 0;
+            scroll-margin-top: 100px;
+        }
+        
+        .doc-section h3 {
+            color: var(--gitbook-text);
+            font-size: 20px;
+            font-weight: 600;
+            margin: 32px 0 16px 0;
+        }
+        
+        .doc-section p {
+            margin: 16px 0;
+            color: var(--gitbook-text);
         }
         .pricing-grid {
             display: grid;
@@ -28,33 +153,54 @@
             margin: 20px 0;
         }
         .pricing-card {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #007bff;
+            background: var(--gitbook-sidebar);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid var(--gitbook-border);
             text-align: center;
+            transition: all 0.15s ease;
+            box-shadow: var(--gitbook-shadow);
+        }
+        .pricing-card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transform: translateY(-1px);
         }
         .pricing-card.recommended {
-            border-left-color: #28a745;
-            background: #f0fff4;
+            border-color: var(--gitbook-success);
+            background: #f0fdf4;
+            position: relative;
+        }
+        .pricing-card.recommended::before {
+            content: 'RECOMMENDED';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gitbook-success);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
         }
         .plan-name {
             font-size: 18px;
             font-weight: 600;
             margin-bottom: 8px;
-            color: #333;
+            color: #111827;
         }
         .plan-price {
             font-size: 32px;
             font-weight: 600;
-            color: #007bff;
+            color: var(--gitbook-primary);
             margin-bottom: 4px;
         }
         .recommended .plan-price {
-            color: #28a745;
+            color: var(--gitbook-success);
         }
         .plan-period {
-            color: #666;
+            color: #6b7280;
             font-size: 14px;
             margin-bottom: 20px;
         }
@@ -67,7 +213,7 @@
         .plan-features li {
             padding: 6px 0;
             font-size: 14px;
-            color: #333;
+            color: #374151;
             position: relative;
             padding-left: 20px;
         }
@@ -75,58 +221,65 @@
             content: "✓";
             position: absolute;
             left: 0;
-            color: #28a745;
-            font-weight: bold;
+            color: #10b981;
+            font-weight: 600;
         }
         .btn {
             display: block;
             width: 100%;
             padding: 12px 20px;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.15s ease;
             text-align: center;
             text-decoration: none;
         }
         .btn-primary {
-            background: #007bff;
+            background: var(--gitbook-primary);
             color: white;
         }
         .btn-primary:hover {
-            background: #0056b3;
+            background: var(--gitbook-primary-dark);
+        }
+        .recommended .btn-primary {
+            background: var(--gitbook-success);
+        }
+        .recommended .btn-primary:hover {
+            background: var(--gitbook-success-dark);
         }
         .btn-secondary {
-            background: transparent;
-            color: #007bff;
-            border: 1px solid #007bff;
+            background: #ffffff;
+            color: #374151;
+            border: 1px solid #d1d5db;
         }
         .btn-secondary:hover {
-            background: #007bff;
-            color: white;
+            background: #f9fafb;
+            border-color: #9ca3af;
         }
         .purchase-form {
-            margin: 30px 0;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 8px;
+            margin: 32px 0;
+            padding: 24px;
+            background: var(--gitbook-sidebar);
+            border-radius: 12px;
             display: none;
-            border-left: 4px solid #007bff;
+            border: 1px solid var(--gitbook-border);
+            box-shadow: var(--gitbook-shadow);
         }
         .form-header h3 {
             margin: 0 0 8px 0;
             font-size: 18px;
             font-weight: 600;
-            color: #333;
+            color: #111827;
         }
         .selected-plan {
             display: inline-block;
-            background: #007bff;
+            background: var(--gitbook-primary);
             color: white;
             padding: 6px 12px;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 14px;
             font-weight: 500;
         }
@@ -144,23 +297,24 @@
             grid-column: 1 / -1;
         }
         label {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 500;
-            margin-bottom: 6px;
-            color: #333;
+            margin-bottom: 8px;
+            color: #374151;
         }
         input {
-            padding: 10px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
             font-size: 14px;
             background: white;
-            color: #333;
+            color: #374151;
+            transition: border-color 0.15s ease;
         }
         input:focus {
             outline: none;
-            border-color: #007bff;
-            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+            border-color: var(--gitbook-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
         #paypal-button-container {
             margin-top: 20px;
@@ -175,14 +329,14 @@
             margin: 20px 0;
         }
         .result-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: #f0fdf4;
+            color: #059669;
+            border: 1px solid #bbf7d0;
         }
         .result-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
         }
         @media (max-width: 768px) {
             .pricing-grid {
@@ -195,16 +349,26 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="header-content">
-            <h1>AutoNestCut License</h1>
-            <p class="developer-credit">Professional SketchUp Extension</p>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>AutoNestCut</h1>
+            <p class="developer-credit">Professional License</p>
         </div>
+        <nav class="nav-menu">
+            <div class="nav-item"><a href="#pricing" class="nav-link active">Choose License</a></div>
+            <div class="nav-item"><a href="#features" class="nav-link">What's Included</a></div>
+            <div class="nav-item"><a href="#purchase" class="nav-link">Purchase Form</a></div>
+        </nav>
     </div>
-
-    <div class="doc-container">
+    
+    <div class="main-content">
+        <div class="content-header">
+            <h1>License Options</h1>
+        </div>
+        
+        <div class="doc-container">
         <div class="doc-section">
-            <h2>Choose Your License</h2>
+            <h2 id="pricing">Choose Your License</h2>
             <p>Professional tools for professional results. Start with a free 7-day trial.</p>
             
             <div class="pricing-grid">
@@ -245,9 +409,39 @@
             </div>
         </div>
 
+        <div class="doc-section">
+            <h2 id="features">What's Included</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>🎯 Advanced Nesting</h4>
+                    <p>Optimized algorithms that minimize waste and maximize efficiency for your sheet goods.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📊 Detailed Reports</h4>
+                    <p>Comprehensive cut lists, material summaries, and cost calculations with multiple export formats.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🔧 Professional Tools</h4>
+                    <p>Material database management, custom board sizes, and grain direction control.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>💼 Commercial Use</h4>
+                    <p>Full commercial license included - use for client projects and business operations.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🚀 Performance Optimized</h4>
+                    <p>Lightning-fast processing with intelligent caching and single-pass algorithms.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📞 Priority Support</h4>
+                    <p>Direct email support from the developer with priority response times.</p>
+                </div>
+            </div>
+        </div>
+        
         <div class="purchase-form" id="purchaseForm">
             <div class="form-header">
-                <h3>Complete Your Purchase</h3>
+                <h3 id="purchase">Complete Your Purchase</h3>
                 <div class="selected-plan" id="selectedPlan"></div>
             </div>
             
@@ -269,9 +463,47 @@
             <div id="paypal-button-container"></div>
             <div id="purchaseResult"></div>
         </div>
+        </div>
     </div>
 
     <script>
+        // Navigation highlighting
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('.doc-section h2[id], .doc-section h3[id]');
+            
+            function updateActiveNav() {
+                let current = 'pricing';
+                sections.forEach(section => {
+                    const rect = section.getBoundingClientRect();
+                    if (rect.top <= 120) {
+                        current = section.getAttribute('id');
+                    }
+                });
+                
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === `#${current}`) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+            
+            window.addEventListener('scroll', updateActiveNav);
+            updateActiveNav();
+            
+            // Smooth scrolling for nav links
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetElement = document.getElementById(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
+            });
+        });
         let selectedLicenseType = '';
         let selectedPrice = 0;
         let userCurrency = 'USD';
@@ -343,7 +575,14 @@
                 `${type === 'lifetime' ? 'Lifetime' : 'Annual'} License — ${getCurrencySymbol()}${selectedPrice}`;
             
             document.getElementById('purchaseForm').style.display = 'block';
-            document.getElementById('purchaseForm').scrollIntoView({ 
+            
+            // Update nav to show purchase section
+            const purchaseLink = document.querySelector('a[href="#purchase"]');
+            if (purchaseLink) {
+                purchaseLink.classList.add('active');
+            }
+            
+            document.getElementById('purchase').scrollIntoView({ 
                 behavior: 'smooth', 
                 block: 'start' 
             });

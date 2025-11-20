@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.mjs",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "server.mjs"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/admin/check-expired-trials",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/daily-report",
+      "schedule": "0 2 * * *"
+    }
+  ]
+}

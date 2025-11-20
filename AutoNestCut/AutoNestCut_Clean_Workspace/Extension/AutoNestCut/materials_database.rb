@@ -21,9 +21,9 @@ module AutoNestCut
         materials[row['name']] = {
           'width' => row['width'].to_f,
           'height' => row['height'].to_f,
+          'thickness' => (row['thickness'] || 18).to_f,
           'price' => row['price'].to_f,
-          'supplier' => row['supplier'] || '',
-          'notes' => row['notes'] || ''
+          'currency' => row['currency'] || 'USD'
         }
       end
       materials
@@ -35,15 +35,15 @@ module AutoNestCut
     def self.save_database(materials)
       ensure_database_folder
       CSV.open(database_file, 'w') do |csv|
-        csv << ['name', 'width', 'height', 'price', 'supplier', 'notes']
+        csv << ['name', 'width', 'height', 'thickness', 'price', 'currency']
         materials.each do |name, data|
           csv << [
             name,
             data['width'] || 2440,
             data['height'] || 1220,
+            data['thickness'] || 18,
             data['price'] || 0,
-            data['supplier'] || '',
-            data['notes'] || ''
+            data['currency'] || 'USD'
           ]
         end
       end
@@ -63,6 +63,7 @@ module AutoNestCut
           'width' => (row['width'] || row['Width'] || 2440).to_f,
           'height' => (row['height'] || row['Height'] || 1220).to_f,
           'price' => (row['price'] || row['Price'] || 0).to_f,
+          'currency' => row['currency'] || row['Currency'] || 'USD',
           'supplier' => row['supplier'] || row['Supplier'] || '',
           'notes' => row['notes'] || row['Notes'] || ''
         }
@@ -75,13 +76,112 @@ module AutoNestCut
     
     def self.get_default_materials
       {
-        'Plywood_19mm' => { 'width' => 2440, 'height' => 1220, 'price' => 45, 'supplier' => 'Local Supplier', 'notes' => '19mm Birch Plywood' },
-        'Plywood_12mm' => { 'width' => 2440, 'height' => 1220, 'price' => 35, 'supplier' => 'Local Supplier', 'notes' => '12mm Birch Plywood' },
-        'MDF_16mm' => { 'width' => 2800, 'height' => 2070, 'price' => 25, 'supplier' => 'Local Supplier', 'notes' => '16mm MDF Board' },
-        'MDF_19mm' => { 'width' => 2800, 'height' => 2070, 'price' => 30, 'supplier' => 'Local Supplier', 'notes' => '19mm MDF Board' },
-        'Oak_Veneer' => { 'width' => 2440, 'height' => 1220, 'price' => 85, 'supplier' => 'Hardwood Supplier', 'notes' => 'Oak Veneer on MDF' },
-        'Melamine_White' => { 'width' => 2800, 'height' => 2070, 'price' => 40, 'supplier' => 'Local Supplier', 'notes' => 'White Melamine Board' }
+        'Plywood_19mm' => { 'width' => 2440, 'height' => 1220, 'thickness' => 19, 'price' => 45, 'currency' => 'USD' },
+        'Plywood_12mm' => { 'width' => 2440, 'height' => 1220, 'thickness' => 12, 'price' => 35, 'currency' => 'USD' },
+        'MDF_16mm' => { 'width' => 2440, 'height' => 1220, 'thickness' => 16, 'price' => 25, 'currency' => 'USD' },
+        'MDF_19mm' => { 'width' => 2440, 'height' => 1220, 'thickness' => 19, 'price' => 30, 'currency' => 'USD' },
+        'Oak_Veneer' => { 'width' => 2440, 'height' => 1220, 'thickness' => 18, 'price' => 85, 'currency' => 'USD' },
+        'Melamine_White' => { 'width' => 2440, 'height' => 1220, 'thickness' => 18, 'price' => 40, 'currency' => 'USD' }
       }
+    end
+    
+    def self.get_supported_currencies
+      {
+        'USD' => '$',
+        'EUR' => '€',
+        'GBP' => '£',
+        'CAD' => 'C$',
+        'AUD' => 'A$',
+        'JPY' => '¥',
+        'CNY' => '¥',
+        'INR' => '₹',
+        'BRL' => 'R$',
+        'MXN' => '$',
+        'CHF' => 'CHF',
+        'SEK' => 'kr',
+        'NOK' => 'kr',
+        'DKK' => 'kr',
+        'PLN' => 'zł',
+        'CZK' => 'Kč',
+        'HUF' => 'Ft',
+        'RUB' => '₽',
+        'TRY' => '₺',
+        'ZAR' => 'R',
+        'KRW' => '₩',
+        'SGD' => 'S$',
+        'HKD' => 'HK$',
+        'NZD' => 'NZ$',
+        'THB' => '฿',
+        'MYR' => 'RM',
+        'IDR' => 'Rp',
+        'PHP' => '₱',
+        'VND' => '₫',
+        'ILS' => '₪',
+        'AED' => 'د.إ',
+        'SAR' => 'ر.س',
+        'EGP' => 'ج.م',
+        'QAR' => 'ر.ق',
+        'KWD' => 'د.ك',
+        'BHD' => 'د.ب',
+        'OMR' => 'ر.ع.',
+        'JOD' => 'د.ا',
+        'LBP' => 'ل.ل',
+        'MAD' => 'د.م.',
+        'TND' => 'د.ت',
+        'DZD' => 'د.ج',
+        'LYD' => 'ل.د',
+        'SDG' => 'ج.س.',
+        'SOS' => 'S',
+        'ETB' => 'Br',
+        'KES' => 'KSh',
+        'UGX' => 'USh',
+        'TZS' => 'TSh',
+        'RWF' => 'RF',
+        'BIF' => 'FBu',
+        'DJF' => 'Fdj',
+        'ERN' => 'Nfk',
+        'MGA' => 'Ar',
+        'MUR' => '₨',
+        'SCR' => '₨',
+        'KMF' => 'CF',
+        'MWK' => 'MK',
+        'ZMW' => 'ZK',
+        'BWP' => 'P',
+        'SZL' => 'L',
+        'LSL' => 'L',
+        'NAD' => 'N$',
+        'AOA' => 'Kz',
+        'MZN' => 'MT',
+        'ZWL' => 'Z$',
+        'GMD' => 'D',
+        'SLL' => 'Le',
+        'LRD' => 'L$',
+        'GHS' => '₵',
+        'NGN' => '₦',
+        'XOF' => 'CFA',
+        'XAF' => 'FCFA',
+        'CVE' => '$',
+        'STD' => 'Db',
+        'GNF' => 'FG',
+        'CDF' => 'FC',
+        'XPF' => '₣',
+        'FJD' => 'FJ$',
+        'SBD' => 'SI$',
+        'VUV' => 'VT',
+        'TOP' => 'T$',
+        'WST' => 'WS$',
+        'PGK' => 'K',
+        'TVD' => '$',
+        'NRU' => '$',
+        'KID' => '$',
+        'CKD' => '$',
+        'NUD' => '$'
+      }
+    end
+    
+    def self.format_price(price, currency = 'USD')
+      symbol = get_supported_currencies[currency] || currency
+      "#{symbol}#{price.round(2)}"
     end
     
   end

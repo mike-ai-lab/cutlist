@@ -4,7 +4,12 @@ module AutoNestCut
     DEFAULT_SETTINGS = {
       'kerf_width' => 3.0,
       'allow_rotation' => true,
-      'stock_materials' => {}
+      'stock_materials' => {},
+      'default_currency' => 'USD',
+      'units' => 'mm',
+      'display_units' => 'mm',
+      'area_units' => 'm2',
+      'precision' => 1
     }
     
     def self.load_settings
@@ -20,8 +25,10 @@ module AutoNestCut
           # Convert old array format if needed
           saved_materials = saved_materials.transform_values do |dims|
             if dims.is_a?(Array)
-              { 'width' => dims[0].to_f, 'height' => dims[1].to_f, 'price' => 0 }
+              { 'width' => dims[0].to_f, 'height' => dims[1].to_f, 'thickness' => 18.0, 'price' => 0 }
             else
+              # Ensure thickness exists for existing materials
+              dims['thickness'] = 18.0 unless dims.key?('thickness')
               dims
             end
           end
@@ -39,6 +46,85 @@ module AutoNestCut
       settings.each do |key, value|
         Sketchup.write_default('AutoNestCut', key, value)
       end
+      # Clear cache to force reload
+      @cached_settings = nil
+    end
+    
+    def self.update_global_setting(key, value)
+      Sketchup.write_default('AutoNestCut', key, value)
+      
+      # Update cached settings with the new value
+      if @cached_settings
+        @cached_settings[key] = value
+      end
+      
+      # Update materials database if currency changed
+      if key == 'default_currency'
+        update_materials_currency(value)
+      elsif key == 'units'
+        # Convert existing material dimensions to new units
+        convert_material_dimensions_to_units(value)
+      end
+    end
+    
+    def self.update_materials_currency(new_currency)
+      settings = get_cached_settings
+      materials = settings['stock_materials'] || {}
+      
+      materials.each do |material_name, data|
+        if data.is_a?(Hash)
+          data['currency'] = new_currency
+        end
+      end
+      
+      # Only save the stock_materials, not all settings
+      Sketchup.write_default('AutoNestCut', 'stock_materials', materials)
+      
+      # Update cache
+      if @cached_settings
+        @cached_settings['stock_materials'] = materials
+      end
+    end
+    
+    def self.convert_material_dimensions_to_units(new_units)
+      settings = get_cached_settings
+      old_units = settings['units'] || 'mm'
+      
+      return if old_units == new_units
+      
+      materials = settings['stock_materials'] || {}
+      conversion_factor = get_unit_conversion_factor(old_units, new_units)
+      
+      materials.each do |material_name, data|
+        if data.is_a?(Hash)
+          data['width'] = (data['width'] || 2440) * conversion_factor
+          data['height'] = (data['height'] || 1220) * conversion_factor
+        end
+      end
+      
+      # Only save the stock_materials, not all settings
+      Sketchup.write_default('AutoNestCut', 'stock_materials', materials)
+      
+      # Update cache
+      if @cached_settings
+        @cached_settings['stock_materials'] = materials
+        @cached_settings['units'] = new_units
+      end
+    end
+    
+    def self.get_unit_conversion_factor(from_unit, to_unit)
+      # Conversion factors to mm
+      factors = {
+        'mm' => 1.0,
+        'cm' => 10.0,
+        'in' => 25.4,
+        'ft' => 304.8
+      }
+      
+      return 1.0 unless factors[from_unit] && factors[to_unit]
+      
+      # Convert from source unit to mm, then to target unit
+      factors[from_unit] / factors[to_unit]
     end
     
     def self.get_material_from_definition(component_definition, selected_entities = nil)

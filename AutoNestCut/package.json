@@ -1,0 +1,13 @@
+{
+  "name": "autonestcut-tests",
+  "version": "1.0.0",
+  "description": "AutoNestCut workflow testing suite",
+  "main": "test_workflow.js",
+  "scripts": {
+    "test": "node test_workflow.js",
+    "test-ui": "start test_ui_workflow.html"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
+}

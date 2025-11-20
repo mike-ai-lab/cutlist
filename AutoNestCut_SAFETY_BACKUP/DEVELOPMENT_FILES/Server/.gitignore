@@ -1,0 +1,14 @@
+node_modules/
+.env*
+*.log
+*.pem
+*.csv
+.DS_Store
+.amazonq/
+.qodo/
+*_GUIDE.md
+*_DOCUMENTATION.md
+*workflow*.md
+server.js
+server_production.mjs
+.vercel
